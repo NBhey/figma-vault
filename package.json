@@ -12,6 +12,7 @@
   "scripts": {
     "pull": "tsx src/pull/index.ts",
     "mcp": "tsx src/mcp/index.ts",
+    "mcp:example": "tsx src/mcp/index.ts --vault vault/example",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\""
