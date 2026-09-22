@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 
 import { pullFigmaSelection } from "../pull/pull.js";
+import { runCheck } from "./check.js";
+import { runDemo } from "./demo.js";
 import { runInit } from "./init.js";
 
 const USAGE = `figma-vault — локальное хранилище макетов Figma для AI-агентов
 
   figma-vault init                 подключить хранилище к текущему проекту
   figma-vault add <figma-url>      выгрузить макет в хранилище
+  figma-vault demo                 положить демо-макет в хранилище (без токена)
+  figma-vault check                проверить, что вся цепочка работает
   figma-vault list                 что уже выгружено
   figma-vault mcp                  запустить MCP-сервер (вызывает агент, не человек)
 
@@ -124,6 +128,12 @@ async function main(): Promise<void> {
     case "add":
     case "pull":
       await add(positional[0], vaultDir);
+      return;
+    case "demo":
+      await runDemo(process.cwd(), vaultDir);
+      return;
+    case "check":
+      await runCheck(process.cwd(), vaultDir, process.argv[1] as string);
       return;
     case "list":
       await list(vaultDir);
