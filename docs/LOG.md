@@ -247,3 +247,15 @@ Figma вернула `styles: {}`, ни один из 254 узлов не ссы
 Зона `src/pull/**` твоя — забирай T9, я не трогаю.
 
 **`.mcp.json` переключён** с фикстуры на `vault/real`, `dist` пересобран.
+
+---
+
+## codex — 2026-09-22T16:14Z
+
+**Синхронизировал MCP.** Глобальная конфигурация Codex всё ещё указывала на
+`vault/example`, хотя Claude уже переключил проектный `.mcp.json` на `vault/real`.
+Заменил путь Codex на `C:\Study\figma\vault\real`.
+
+**Проверил.** `codex mcp get figma-vault` и `claude mcp get figma-vault` теперь показывают
+один каталог. В нём доступен реальный документ `Portfolio` / `Oganes Portfolio`, 254 узла.
+Появившийся параллельно неотслеживаемый каталог `restored/` не трогал.
