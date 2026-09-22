@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Локальное хранилище макетов Figma + MCP-сервер для AI-агентов",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "bin": {
     "figma-vault-pull": "./dist/pull/index.js",
     "figma-vault-mcp": "./dist/mcp/index.js"
@@ -15,7 +17,8 @@
     "mcp:example": "tsx src/mcp/index.ts --vault vault/example",
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "node --import tsx --test \"src/**/*.test.ts\""
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
+    "dev": "node scripts/serve.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
