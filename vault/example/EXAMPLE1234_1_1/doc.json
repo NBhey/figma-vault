@@ -1,0 +1,568 @@
+{
+  "schema": "figma-vault/doc@0",
+  "source": {
+    "fileKey": "EXAMPLE1234",
+    "nodeId": "1:1",
+    "fileName": "Figma Vault Example",
+    "nodeName": "Sign in / Mobile",
+    "exportedAt": "2026-09-22T15:00:00Z",
+    "figmaVersion": "0000000000"
+  },
+  "tokens": {
+    "colors": {
+      "brand/500": "#3B82F6",
+      "brand/600": "#2563EB",
+      "surface/base": "#FFFFFF",
+      "surface/muted": "#F3F4F6",
+      "border/default": "#E5E7EB",
+      "text/primary": "#111827",
+      "text/secondary": "#374151",
+      "text/muted": "#6B7280",
+      "text/placeholder": "#9CA3AF",
+      "text/inverse": "#FFFFFF"
+    },
+    "text": {
+      "display/lg": { "font": "Inter", "size": 28, "weight": 700, "lineHeight": 36, "letterSpacing": -0.4 },
+      "title/md": { "font": "Inter", "size": 20, "weight": 700, "lineHeight": 24, "letterSpacing": -0.2 },
+      "body/md": { "font": "Inter", "size": 16, "weight": 400, "lineHeight": 24, "letterSpacing": 0 },
+      "body/sm": { "font": "Inter", "size": 14, "weight": 400, "lineHeight": 20, "letterSpacing": 0 },
+      "label/md": { "font": "Inter", "size": 14, "weight": 500, "lineHeight": 20, "letterSpacing": 0 },
+      "button/md": { "font": "Inter", "size": 16, "weight": 600, "lineHeight": 24, "letterSpacing": 0 }
+    },
+    "effects": {
+      "shadow/card": "0 1px 3px rgba(0,0,0,0.12)",
+      "shadow/button": "0 4px 12px rgba(37,99,235,0.24)"
+    }
+  },
+  "root": {
+    "id": "1:1",
+    "name": "Sign in / Mobile",
+    "type": "frame",
+    "layout": {
+      "mode": "column",
+      "x": 0,
+      "y": 0,
+      "w": 375,
+      "h": 812,
+      "gap": 24,
+      "padding": [48, 24, 32, 24],
+      "align": "stretch",
+      "justify": "start",
+      "grow": 0,
+      "wrap": false
+    },
+    "style": {
+      "fill": "#FFFFFF",
+      "opacity": 1
+    },
+    "children": [
+      {
+        "id": "1:2",
+        "name": "Brand",
+        "type": "frame",
+        "layout": {
+          "mode": "row",
+          "x": 24,
+          "y": 48,
+          "w": 327,
+          "h": 32,
+          "gap": 12,
+          "padding": [0, 0, 0, 0],
+          "align": "center",
+          "justify": "start",
+          "grow": 0,
+          "wrap": false
+        },
+        "children": [
+          {
+            "id": "1:3",
+            "name": "Logo",
+            "type": "vector",
+            "layout": { "mode": "none", "x": 0, "y": 0, "w": 32, "h": 32, "grow": 0 },
+            "asset": { "path": "assets/logo.svg", "w": 32, "h": 32 },
+            "children": []
+          },
+          {
+            "id": "1:4",
+            "name": "Wordmark",
+            "type": "text",
+            "layout": { "mode": "none", "x": 44, "y": 4, "w": 60, "h": 24, "grow": 0 },
+            "text": {
+              "content": "Vault",
+              "token": "title/md",
+              "color": "#111827",
+              "align": "left",
+              "font": "Inter",
+              "size": 20,
+              "weight": 700,
+              "lineHeight": 24,
+              "letterSpacing": -0.2
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "1:5",
+        "name": "Hero illustration",
+        "type": "image",
+        "layout": { "mode": "none", "x": 24, "y": 104, "w": 327, "h": 160, "grow": 0 },
+        "style": { "radius": [16, 16, 16, 16], "opacity": 1 },
+        "asset": { "path": "assets/hero.png", "w": 327, "h": 160 },
+        "children": []
+      },
+      {
+        "id": "1:6",
+        "name": "Heading",
+        "type": "frame",
+        "layout": {
+          "mode": "column",
+          "x": 24,
+          "y": 288,
+          "w": 327,
+          "h": 92,
+          "gap": 8,
+          "padding": [0, 0, 0, 0],
+          "align": "stretch",
+          "justify": "start",
+          "grow": 0,
+          "wrap": false
+        },
+        "children": [
+          {
+            "id": "1:7",
+            "name": "Title",
+            "type": "text",
+            "layout": { "mode": "none", "x": 0, "y": 0, "w": 327, "h": 36, "grow": 0 },
+            "text": {
+              "content": "С возвращением",
+              "token": "display/lg",
+              "color": "#111827",
+              "align": "left",
+              "font": "Inter",
+              "size": 28,
+              "weight": 700,
+              "lineHeight": 36,
+              "letterSpacing": -0.4
+            },
+            "children": []
+          },
+          {
+            "id": "1:8",
+            "name": "Subtitle",
+            "type": "text",
+            "layout": { "mode": "none", "x": 0, "y": 44, "w": 327, "h": 48, "grow": 0 },
+            "text": {
+              "content": "Войдите, чтобы продолжить работу с макетами",
+              "token": "body/md",
+              "color": "#6B7280",
+              "align": "left",
+              "font": "Inter",
+              "size": 16,
+              "weight": 400,
+              "lineHeight": 24,
+              "letterSpacing": 0
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "1:9",
+        "name": "Form",
+        "type": "frame",
+        "layout": {
+          "mode": "column",
+          "x": 24,
+          "y": 404,
+          "w": 327,
+          "h": 200,
+          "gap": 16,
+          "padding": [0, 0, 0, 0],
+          "align": "stretch",
+          "justify": "start",
+          "grow": 0,
+          "wrap": false
+        },
+        "children": [
+          {
+            "id": "1:10",
+            "name": "Field / Email",
+            "type": "frame",
+            "layout": {
+              "mode": "column",
+              "x": 0,
+              "y": 0,
+              "w": 327,
+              "h": 74,
+              "gap": 6,
+              "padding": [0, 0, 0, 0],
+              "align": "stretch",
+              "justify": "start",
+              "grow": 0,
+              "wrap": false
+            },
+            "children": [
+              {
+                "id": "1:11",
+                "name": "Label",
+                "type": "text",
+                "layout": { "mode": "none", "x": 0, "y": 0, "w": 327, "h": 20, "grow": 0 },
+                "text": {
+                  "content": "Email",
+                  "token": "label/md",
+                  "color": "#374151",
+                  "align": "left",
+                  "font": "Inter",
+                  "size": 14,
+                  "weight": 500,
+                  "lineHeight": 20,
+                  "letterSpacing": 0
+                },
+                "children": []
+              },
+              {
+                "id": "1:12",
+                "name": "Input",
+                "type": "instance",
+                "component": "Input/Default",
+                "layout": {
+                  "mode": "row",
+                  "x": 0,
+                  "y": 26,
+                  "w": 327,
+                  "h": 48,
+                  "gap": 8,
+                  "padding": [12, 16, 12, 16],
+                  "align": "center",
+                  "justify": "start",
+                  "grow": 0,
+                  "wrap": false
+                },
+                "style": {
+                  "fill": "#F3F4F6",
+                  "stroke": "#E5E7EB",
+                  "strokeWidth": 1,
+                  "radius": [8, 8, 8, 8],
+                  "opacity": 1
+                },
+                "children": [
+                  {
+                    "id": "1:13",
+                    "name": "Placeholder",
+                    "type": "text",
+                    "layout": { "mode": "none", "x": 16, "y": 12, "w": 295, "h": 24, "grow": 1 },
+                    "text": {
+                      "content": "you@example.com",
+                      "token": "body/md",
+                      "color": "#9CA3AF",
+                      "align": "left",
+                      "font": "Inter",
+                      "size": 16,
+                      "weight": 400,
+                      "lineHeight": 24,
+                      "letterSpacing": 0
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "1:14",
+            "name": "Field / Password",
+            "type": "frame",
+            "layout": {
+              "mode": "column",
+              "x": 0,
+              "y": 90,
+              "w": 327,
+              "h": 74,
+              "gap": 6,
+              "padding": [0, 0, 0, 0],
+              "align": "stretch",
+              "justify": "start",
+              "grow": 0,
+              "wrap": false
+            },
+            "children": [
+              {
+                "id": "1:15",
+                "name": "Label",
+                "type": "text",
+                "layout": { "mode": "none", "x": 0, "y": 0, "w": 327, "h": 20, "grow": 0 },
+                "text": {
+                  "content": "Пароль",
+                  "token": "label/md",
+                  "color": "#374151",
+                  "align": "left",
+                  "font": "Inter",
+                  "size": 14,
+                  "weight": 500,
+                  "lineHeight": 20,
+                  "letterSpacing": 0
+                },
+                "children": []
+              },
+              {
+                "id": "1:16",
+                "name": "Input",
+                "type": "instance",
+                "component": "Input/Default",
+                "layout": {
+                  "mode": "row",
+                  "x": 0,
+                  "y": 26,
+                  "w": 327,
+                  "h": 48,
+                  "gap": 8,
+                  "padding": [12, 16, 12, 16],
+                  "align": "center",
+                  "justify": "start",
+                  "grow": 0,
+                  "wrap": false
+                },
+                "style": {
+                  "fill": "#F3F4F6",
+                  "stroke": "#E5E7EB",
+                  "strokeWidth": 1,
+                  "radius": [8, 8, 8, 8],
+                  "opacity": 1
+                },
+                "children": [
+                  {
+                    "id": "1:17",
+                    "name": "Value",
+                    "type": "text",
+                    "layout": { "mode": "none", "x": 16, "y": 12, "w": 295, "h": 24, "grow": 1 },
+                    "text": {
+                      "content": "••••••••",
+                      "token": "body/md",
+                      "color": "#111827",
+                      "align": "left",
+                      "font": "Inter",
+                      "size": 16,
+                      "weight": 400,
+                      "lineHeight": 24,
+                      "letterSpacing": 0
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "1:18",
+            "name": "Form options",
+            "type": "frame",
+            "layout": {
+              "mode": "row",
+              "x": 0,
+              "y": 180,
+              "w": 327,
+              "h": 20,
+              "gap": 8,
+              "padding": [0, 0, 0, 0],
+              "align": "center",
+              "justify": "between",
+              "grow": 0,
+              "wrap": false
+            },
+            "children": [
+              {
+                "id": "1:19",
+                "name": "Remember me",
+                "type": "frame",
+                "layout": {
+                  "mode": "row",
+                  "x": 0,
+                  "y": 0,
+                  "w": 160,
+                  "h": 20,
+                  "gap": 8,
+                  "padding": [0, 0, 0, 0],
+                  "align": "center",
+                  "justify": "start",
+                  "grow": 0,
+                  "wrap": false
+                },
+                "children": [
+                  {
+                    "id": "1:20",
+                    "name": "Checkbox",
+                    "type": "instance",
+                    "component": "Checkbox/Off",
+                    "layout": { "mode": "none", "x": 0, "y": 0, "w": 20, "h": 20, "grow": 0 },
+                    "style": {
+                      "fill": "#FFFFFF",
+                      "stroke": "#E5E7EB",
+                      "strokeWidth": 1,
+                      "radius": [6, 6, 6, 6],
+                      "opacity": 1
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "1:21",
+                    "name": "Caption",
+                    "type": "text",
+                    "layout": { "mode": "none", "x": 28, "y": 0, "w": 132, "h": 20, "grow": 0 },
+                    "text": {
+                      "content": "Запомнить меня",
+                      "token": "body/sm",
+                      "color": "#6B7280",
+                      "align": "left",
+                      "font": "Inter",
+                      "size": 14,
+                      "weight": 400,
+                      "lineHeight": 20,
+                      "letterSpacing": 0
+                    },
+                    "children": []
+                  }
+                ]
+              },
+              {
+                "id": "1:22",
+                "name": "Forgot password",
+                "type": "text",
+                "layout": { "mode": "none", "x": 222, "y": 0, "w": 105, "h": 20, "grow": 0 },
+                "text": {
+                  "content": "Забыли пароль?",
+                  "token": "body/sm",
+                  "color": "#3B82F6",
+                  "align": "right",
+                  "font": "Inter",
+                  "size": 14,
+                  "weight": 400,
+                  "lineHeight": 20,
+                  "letterSpacing": 0
+                },
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "1:23",
+        "name": "Submit button",
+        "type": "instance",
+        "component": "Button/Primary",
+        "layout": {
+          "mode": "row",
+          "x": 24,
+          "y": 628,
+          "w": 327,
+          "h": 48,
+          "gap": 8,
+          "padding": [12, 16, 12, 16],
+          "align": "center",
+          "justify": "center",
+          "grow": 0,
+          "wrap": false
+        },
+        "style": {
+          "fill": "#3B82F6",
+          "radius": [8, 8, 8, 8],
+          "opacity": 1,
+          "shadow": "0 4px 12px rgba(37,99,235,0.24)"
+        },
+        "children": [
+          {
+            "id": "1:24",
+            "name": "Label",
+            "type": "text",
+            "layout": { "mode": "none", "x": 139, "y": 12, "w": 49, "h": 24, "grow": 0 },
+            "text": {
+              "content": "Войти",
+              "token": "button/md",
+              "color": "#FFFFFF",
+              "align": "center",
+              "font": "Inter",
+              "size": 16,
+              "weight": 600,
+              "lineHeight": 24,
+              "letterSpacing": 0
+            },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "1:25",
+        "name": "Divider",
+        "type": "frame",
+        "layout": {
+          "mode": "row",
+          "x": 24,
+          "y": 700,
+          "w": 327,
+          "h": 20,
+          "gap": 12,
+          "padding": [0, 0, 0, 0],
+          "align": "center",
+          "justify": "start",
+          "grow": 0,
+          "wrap": false
+        },
+        "children": [
+          {
+            "id": "1:26",
+            "name": "Rule left",
+            "type": "frame",
+            "layout": { "mode": "none", "x": 0, "y": 9.5, "w": 139, "h": 1, "grow": 1 },
+            "style": { "fill": "#E5E7EB", "opacity": 1 },
+            "children": []
+          },
+          {
+            "id": "1:27",
+            "name": "Caption",
+            "type": "text",
+            "layout": { "mode": "none", "x": 151, "y": 0, "w": 25, "h": 20, "grow": 0 },
+            "text": {
+              "content": "или",
+              "token": "body/sm",
+              "color": "#9CA3AF",
+              "align": "center",
+              "font": "Inter",
+              "size": 14,
+              "weight": 400,
+              "lineHeight": 20,
+              "letterSpacing": 0
+            },
+            "children": []
+          },
+          {
+            "id": "1:28",
+            "name": "Rule right",
+            "type": "frame",
+            "layout": { "mode": "none", "x": 188, "y": 9.5, "w": 139, "h": 1, "grow": 1 },
+            "style": { "fill": "#E5E7EB", "opacity": 1 },
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "1:29",
+        "name": "Footer",
+        "type": "text",
+        "layout": { "mode": "none", "x": 24, "y": 744, "w": 327, "h": 20, "grow": 0 },
+        "text": {
+          "content": "Нет аккаунта? Зарегистрируйтесь",
+          "token": "body/sm",
+          "color": "#6B7280",
+          "align": "center",
+          "font": "Inter",
+          "size": 14,
+          "weight": 400,
+          "lineHeight": 20,
+          "letterSpacing": 0
+        },
+        "children": []
+      }
+    ]
+  }
+}
