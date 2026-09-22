@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Oganes — Frontend Developer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#062C1F;
+  --panel:#0A3829;
+  --footer-bg:#041A12;
+  --accent:#11D452;
+  --accent-05:rgba(17,212,82,.05);
+  --accent-10:rgba(17,212,82,.1);
+  --accent-20:rgba(17,212,82,.2);
+  --accent-30:rgba(17,212,82,.3);
+  --white:#FFFFFF;
+  --gray-300:#D1D5DB;
+  --gray-400:#9CA3AF;
+  --gray-500:#6B7280;
+  --shell:1280px;
+  --container:1232px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--white);
+  font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+img{display:block;max-width:100%}
+a{text-decoration:none;color:inherit}
+
+/* ---------- Navbar ---------- */
+.navbar{
+  position:sticky;top:0;z-index:50;
+  height:81px;
+  background:rgba(6,44,31,.7);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--accent-20);
+}
+.navbar__inner{
+  height:80px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;max-width:var(--shell);margin:0 auto;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand__mark{
+  width:32px;height:32px;border-radius:8px;background:var(--accent-20);
+  display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+}
+.brand__mark img{width:16.67px;height:13.33px}
+.brand__name{font-size:20px;line-height:28px;font-weight:700}
+.nav__links{display:flex;align-items:center;gap:32px}
+.nav__links a{font-size:14px;line-height:20px;font-weight:500;color:var(--gray-300);transition:color .2s}
+.nav__links a:hover{color:var(--accent)}
+.btn-talk{
+  padding:10px 20px;border-radius:8px;background:var(--accent);
+  color:#062C1F;font-size:14px;line-height:20px;font-weight:700;
+  box-shadow:0 0 15px 0 var(--accent-30);
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:filter .2s;
+}
+.btn-talk:hover{filter:brightness(1.08)}
+
+/* ---------- Hero ---------- */
+.hero{position:relative;overflow:hidden;padding:192px 24px 128px}
+.hero__blob{position:absolute;border-radius:9999px;background:var(--accent-05);pointer-events:none}
+.hero__blob--tr{width:800px;height:800px;left:746.67px;top:-400px}
+.hero__blob--bl{width:600px;height:600px;left:-150px;top:545.75px}
+.hero__inner{
+  position:relative;display:flex;gap:48px;align-items:center;justify-content:center;
+  max-width:var(--container);margin:0 auto;
+}
+.hero__col{width:592px;flex:0 0 592px;display:flex;flex-direction:column;gap:24px}
+.badge{
+  align-self:flex-start;display:inline-flex;align-items:center;gap:8px;
+  padding:4px 12px;border-radius:9999px;
+  background:var(--accent-10);border:1px solid var(--accent-20);
+}
+.badge__dot{width:8px;height:8px;border-radius:9999px;background:var(--accent);flex:0 0 auto}
+.badge span{font-size:12px;line-height:16px;font-weight:700;color:var(--accent)}
+.hero__title{display:flex;flex-direction:column;gap:8.5px}
+.hero__title span{font-size:72px;line-height:72px;font-weight:900;letter-spacing:-.02em}
+.hero__title .accent{color:var(--accent)}
+.hero__lead{width:576px;font-size:18px;line-height:29.25px;font-weight:400;color:var(--gray-400)}
+.hero__actions{display:flex;gap:16px;margin-top:16px}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  padding:16px 32px;border-radius:8px;
+  font-size:16px;line-height:24px;font-weight:700;
+  transition:filter .2s,background .2s;
+}
+.btn--primary{background:var(--accent);color:#062C1F}
+.btn--primary:hover{filter:brightness(1.08)}
+.btn--primary img{width:13.33px;height:13.33px;margin-left:8px}
+.btn--ghost{background:var(--panel);color:var(--white);border:1px solid var(--accent-30)}
+.btn--ghost:hover{background:#0d4632}
+.stats{
+  margin-top:32px;padding-top:32px;border-top:1px solid var(--accent-10);
+  display:flex;align-items:center;gap:24px;
+}
+.stat__value{font-size:24px;line-height:32px;font-weight:700}
+.stat__label{font-size:14px;line-height:20px;font-weight:400;color:var(--gray-500)}
+.stats__divider{width:1px;height:40px;background:var(--accent-20);flex:0 0 auto}
+.hero__card{
+  position:relative;width:592px;height:600px;flex:0 0 592px;
+  background:rgba(10,56,41,.5);
+  border:1px solid var(--accent-10);border-radius:16px;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);
+  overflow:hidden;
+}
+.hero__card>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.8}
+.hero__card::after{
+  content:"";position:absolute;inset:0;
+  background:linear-gradient(to top,rgba(6,44,31,.95) 0%,rgba(6,44,31,.35) 45%,rgba(6,44,31,0) 75%);
+}
+.code{position:absolute;left:0;right:0;bottom:0;z-index:2;padding:32px}
+.code__panel{
+  background:rgba(0,0,0,.4);border:1px solid var(--accent-20);border-radius:12px;
+  padding:24px;display:flex;flex-direction:column;gap:16px;
+  backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+}
+.code__dots{display:flex;gap:8px}
+.code__dots i{width:12px;height:12px;border-radius:9999px;display:block}
+.code__dots i:nth-child(1){background:#EF4444}
+.code__dots i:nth-child(2){background:#EAB308}
+.code__dots i:nth-child(3){background:#22C55E}
+.code pre{
+  font-family:"JetBrains Mono","Liberation Mono",ui-monospace,monospace;
+  font-size:14px;line-height:20px;color:#C084FC;white-space:pre;margin:0;
+}
+
+/* ---------- About ---------- */
+.about{padding:96px 192px;background:rgba(10,56,41,.3)}
+.about__inner{max-width:896px;margin:0 auto;display:flex;flex-direction:column;gap:32px}
+.rule-heading{display:flex;align-items:center;gap:16px}
+.rule-heading hr{flex:1 1 0;height:1px;border:0;background:var(--accent-20)}
+.rule-heading h2{font-size:30px;line-height:36px;font-weight:700;white-space:nowrap}
+.about__card{
+  background:var(--bg);border:1px solid var(--accent-10);border-radius:16px;
+  padding:48px;display:flex;flex-direction:column;gap:32px;
+  box-shadow:0 8px 10px -6px rgba(0,0,0,.1);
+}
+.hl{color:var(--accent);font-style:normal}
+.about__lead{font-size:24px;line-height:32px;font-weight:300;color:var(--gray-300)}
+.about__text{font-size:16px;line-height:26px;font-weight:400;color:var(--gray-400)}
+.features{display:flex;gap:24px;justify-content:center}
+.feature{
+  width:181.5px;flex:0 0 181.5px;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  padding:16px;border-radius:12px;
+  background:rgba(10,56,41,.5);border:1px solid var(--accent-05);
+}
+.feature__icon{height:25px;display:flex;align-items:center;justify-content:center}
+.feature h3{font-size:16px;line-height:24px;font-weight:500;text-align:center}
+
+/* ---------- Tech stack ---------- */
+.tech{padding:0 156.39px}
+.tech__inner{padding:96px 24px;display:flex;flex-direction:column;gap:64px}
+.tech__head{display:flex;align-items:flex-end;justify-content:space-between;gap:48px}
+.tech__head-left{display:flex;flex-direction:column;gap:16px}
+.tech__head h2{font-size:36px;line-height:40px;font-weight:700}
+.tech__head p{font-size:16px;line-height:24px;font-weight:400;color:var(--gray-400)}
+.tech__link{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:16px;line-height:24px;font-weight:500;color:var(--accent);flex:0 0 auto;
+}
+.tech__link img{width:9.33px;height:9.33px}
+.tech__grid{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.tech__item{
+  width:133.2px;height:138px;flex:0 0 133.2px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  padding:24px;border-radius:12px;
+  background:var(--panel);border:1px solid var(--accent-10);
+  transition:border-color .2s,transform .2s;
+}
+.tech__item:hover{border-color:var(--accent-30);transform:translateY(-2px)}
+.tech__item-icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.tech__item span{font-size:16px;line-height:24px;font-weight:500;color:var(--gray-300)}
+
+/* ---------- Projects ---------- */
+.projects{padding:96px 24px;background:rgba(10,56,41,.2)}
+.projects__inner{max-width:var(--container);margin:0 auto;display:flex;flex-direction:column;gap:64px}
+.projects>.projects__inner>h2{font-size:36px;line-height:40px;font-weight:700;text-align:center}
+.projects__list{display:flex;flex-direction:column;gap:96px}
+.project{display:flex;gap:48px;align-items:center;justify-content:center}
+.project__shot{
+  position:relative;width:592px;height:333.88px;flex:0 0 592px;
+  border:1px solid var(--accent-10);border-radius:16px;overflow:hidden;
+  box-shadow:0 25px 50px -12px rgba(0,0,0,.25);background:#1F2937;
+}
+.project__shot img{width:100%;height:100%;object-fit:cover}
+.project__shot::after{content:"";position:absolute;inset:0;background:rgba(0,0,0,.2)}
+.project__body{width:592px;flex:0 0 592px;display:flex;flex-direction:column;gap:24px}
+.project--right .project__body{align-items:flex-end;text-align:right}
+.project__eyebrow{font-size:14px;line-height:20px;font-weight:700;color:var(--accent)}
+.project__body h3{font-size:30px;line-height:36px;font-weight:700}
+.project__desc{font-size:16px;line-height:26px;font-weight:400;color:var(--gray-400)}
+.tags{display:flex;gap:12px;flex-wrap:wrap}
+.project--right .tags{justify-content:flex-end}
+.tag{
+  padding:4px 12px;border-radius:9999px;
+  background:var(--panel);border:1px solid var(--accent-10);
+  font-size:12px;line-height:16px;font-weight:500;color:var(--gray-300);
+}
+.project__links{display:flex;gap:16px;margin-top:16px}
+.project--right .project__links{justify-content:flex-end}
+.project__links a{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:16px;line-height:24px;font-weight:500;color:var(--white);transition:color .2s;
+}
+.project__links a:hover{color:var(--accent)}
+.projects__more{display:flex;justify-content:center;margin-top:32px}
+.btn--outline{
+  padding:12px 32px;border-radius:8px;background:transparent;
+  border:1px solid var(--accent-20);color:var(--accent);
+  font-size:16px;line-height:24px;font-weight:500;
+}
+.btn--outline:hover{background:var(--accent-05)}
+
+/* ---------- CTA ---------- */
+.cta{position:relative;overflow:hidden;padding:96px 256px;background:var(--accent-05)}
+.cta__blob{
+  position:absolute;width:600px;height:600px;left:340px;top:-66px;
+  border-radius:9999px;background:var(--accent-10);pointer-events:none;
+}
+.cta__inner{
+  position:relative;max-width:768px;margin:0 auto;
+  display:flex;flex-direction:column;align-items:center;gap:24px;text-align:center;
+}
+.cta h2{font-size:48px;line-height:48px;font-weight:900}
+.cta p{font-size:18px;line-height:28px;font-weight:400;color:var(--gray-400);padding-bottom:16px}
+.btn--cta{
+  display:inline-flex;align-items:center;gap:12px;
+  padding:16px 32px;border-radius:8px;background:var(--accent);color:#062C1F;
+  font-size:18px;line-height:28px;font-weight:700;
+  box-shadow:0 4px 6px -4px rgba(0,0,0,.1);
+}
+.btn--cta:hover{filter:brightness(1.08)}
+.btn--cta img{width:20px;height:16px}
+
+/* ---------- Footer ---------- */
+.footer{padding:48px 24px;background:var(--footer-bg);border-top:1px solid rgba(255,255,255,.05)}
+.footer__inner{
+  max-width:var(--container);margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;gap:48px;
+}
+.footer__brand{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.footer__brand img{width:16.67px;height:13.33px}
+.footer__brand span{font-size:18px;line-height:28px;font-weight:700}
+.footer__copy{font-size:14px;line-height:20px;font-weight:400;color:var(--gray-500)}
+.socials{display:flex;align-items:center;gap:24px}
+.socials a{
+  width:36px;height:36px;border-radius:9999px;background:rgba(255,255,255,.05);
+  display:flex;align-items:center;justify-content:center;transition:background .2s;
+}
+.socials a:hover{background:rgba(17,212,82,.15)}
+
+@media (max-width:1280px){
+  .about{padding:96px 24px}
+  .tech{padding:0 24px}
+  .cta{padding:96px 24px}
+}
+@media (max-width:1100px){
+  .hero{padding:140px 24px 96px}
+  .hero__inner{flex-direction:column}
+  .hero__col,.hero__card,.project__shot,.project__body{width:100%;flex:1 1 auto}
+  .hero__lead{width:100%}
+  .hero__card{height:auto;aspect-ratio:592/600}
+  .project{flex-direction:column}
+  .project--right{flex-direction:column-reverse}
+  .project--right .project__body{align-items:flex-start;text-align:left}
+  .project--right .tags,.project--right .project__links{justify-content:flex-start}
+  .nav__links{display:none}
+}
+@media (max-width:640px){
+  .hero__title span{font-size:44px;line-height:46px}
+  .cta h2{font-size:32px;line-height:36px}
+  .about__card{padding:24px}
+  .features{flex-wrap:wrap}
+  .footer__inner{flex-direction:column;align-items:flex-start;gap:24px}
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar__inner">
+    <a class="brand" href="#top">
+      <span class="brand__mark"><img src="assets/0_243.svg" alt=""></span>
+      <span class="brand__name">OGANES</span>
+    </a>
+    <div class="nav__links">
+      <a href="#about">About</a>
+      <a href="#tech">Tech Stack</a>
+      <a href="#work">Work</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <a class="btn-talk" href="#contact">Let&#39;s Talk</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="hero__blob hero__blob--tr"></div>
+  <div class="hero__blob hero__blob--bl"></div>
+  <div class="hero__inner">
+    <div class="hero__col">
+      <div class="badge">
+        <i class="badge__dot"></i>
+        <span>Available for new projects</span>
+      </div>
+      <h1 class="hero__title">
+        <span>Frontend<br>Developer:</span>
+        <span class="accent">Oganes</span>
+      </h1>
+      <p class="hero__lead">Building immersive digital experiences with clean code and modern aesthetics. Specialized in React, Next.js, and creating pixel-perfect user interfaces.</p>
+      <div class="hero__actions">
+        <a class="btn btn--primary" href="#work">View Projects<img src="assets/0_73.svg" alt=""></a>
+        <a class="btn btn--ghost" href="#contact">Contact Me</a>
+      </div>
+      <div class="stats">
+        <div><div class="stat__value">5+</div><div class="stat__label">Years Exp.</div></div>
+        <span class="stats__divider"></span>
+        <div><div class="stat__value">50+</div><div class="stat__label">Projects</div></div>
+        <span class="stats__divider"></span>
+        <div><div class="stat__value">100%</div><div class="stat__label">Commitment</div></div>
+      </div>
+    </div>
+    <div class="hero__card">
+      <img src="assets/0_96.png" alt="Abstract Code Editor UI representation">
+      <div class="code">
+        <div class="code__panel">
+          <div class="code__dots"><i></i><i></i><i></i></div>
+<pre>const developer = {
+  name: "Oganes",
+  skills: ["React", "Next.js", "TS"],
+  passion: "Building clean UI"
+};</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section class="about" id="about">
+  <div class="about__inner">
+    <div class="rule-heading"><hr><h2>About Me</h2><hr></div>
+    <div class="about__card">
+      <p class="about__lead">I am a passionate <em class="hl">frontend developer</em> with a keen eye for design and a drive for creating seamless user interactions. I bridge the gap between design and engineering, ensuring that every pixel serves a purpose.</p>
+      <p class="about__text">My journey started with simple HTML &amp; CSS, but quickly evolved into mastering modern frameworks. Today, I build scalable applications using React ecosystem, focusing on performance, accessibility, and delightful user experiences. When I&#39;m not coding, I&#39;m exploring new UI trends or contributing to open source.</p>
+      <div class="features">
+        <div class="feature"><div class="feature__icon"><img src="assets/0_122.svg" alt="" width="25" height="20"></div><h3>Responsive</h3></div>
+        <div class="feature"><div class="feature__icon"><img src="assets/0_127.svg" alt="" width="25" height="20"></div><h3>Fast</h3></div>
+        <div class="feature"><div class="feature__icon"><img src="assets/0_132.svg" alt="" width="25" height="25"></div><h3>Modern</h3></div>
+        <div class="feature"><div class="feature__icon"><img src="assets/0_137.svg" alt="" width="18" height="25"></div><h3>Accessible</h3></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="tech" id="tech">
+  <div class="tech__inner">
+    <div class="tech__head">
+      <div class="tech__head-left">
+        <h2>My Arsenal</h2>
+        <p>The tools and technologies I use to bring ideas to life.<br>Always learning, always evolving.</p>
+      </div>
+      <a class="tech__link" href="#">View Full Resume<img src="assets/0_15.svg" alt=""></a>
+    </div>
+    <div class="tech__grid">
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_20.svg" alt="" width="40" height="37"></div><span>React</span></div>
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_26.svg" alt="" width="40" height="40"></div><span>Next.js</span></div>
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_32.svg" alt="" width="30" height="18"></div><span>TypeScript</span></div>
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_38.svg" alt="" width="30" height="29"></div><span>Tailwind</span></div>
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_44.svg" alt="" width="27" height="29"></div><span>Node.js</span></div>
+      <div class="tech__item"><div class="tech__item-icon"><img src="assets/0_50.svg" alt="" width="18" height="26"></div><span>Git</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="projects" id="work">
+  <div class="projects__inner">
+    <h2>Selected Work</h2>
+    <div class="projects__list">
+
+      <article class="project">
+        <div class="project__shot">
+          <img src="assets/0_148.png" alt="Dashboard Interface showing analytics charts and data tables">
+        </div>
+        <div class="project__body">
+          <div class="project__eyebrow">E-Commerce Analytics</div>
+          <h3>Merchant Dashboard</h3>
+          <p class="project__desc">A comprehensive dashboard for online merchants to track sales, inventory, and customer insights in real-time. Built with performance in mind using React and D3.js for complex data visualization.</p>
+          <div class="tags">
+            <span class="tag">React</span><span class="tag">Redux Toolkit</span><span class="tag">Tailwind CSS</span><span class="tag">Node.js</span>
+          </div>
+          <div class="project__links">
+            <a href="#"><img src="assets/0_170.svg" alt="" width="22" height="15">Live Demo</a>
+            <a href="#"><img src="assets/0_174.svg" alt="" width="20" height="12">View Code</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="project project--right">
+        <div class="project__body">
+          <div class="project__eyebrow">SaaS Platform</div>
+          <h3>FinTech Solution</h3>
+          <p class="project__desc">A modern financial technology platform allowing users to manage assets and track investments. Features dark mode by default, real-time socket updates, and high-security authentication flows.</p>
+          <div class="tags">
+            <span class="tag">Next.js 14</span><span class="tag">TypeScript</span><span class="tag">Framer Motion</span><span class="tag">Supabase</span>
+          </div>
+          <div class="project__links">
+            <a href="#"><img src="assets/0_195.svg" alt="" width="22" height="15">Live Demo</a>
+            <a href="#"><img src="assets/0_199.svg" alt="" width="20" height="12">View Code</a>
+          </div>
+        </div>
+        <div class="project__shot">
+          <img src="assets/0_203.png" alt="Financial application interface on a laptop screen">
+        </div>
+      </article>
+
+    </div>
+    <div class="projects__more">
+      <a class="btn btn--outline" href="#">View GitHub Archive</a>
+    </div>
+  </div>
+</section>
+
+<section class="cta" id="contact">
+  <div class="cta__blob"></div>
+  <div class="cta__inner">
+    <h2>Let&#39;s Build Something<br><span class="hl">Extraordinary</span></h2>
+    <p>I&#39;m currently looking for new opportunities. Whether you have a question or just want to say hi, I&#39;ll try my best to get back to you!</p>
+    <a class="btn--cta" href="mailto:hello@example.com"><img src="assets/0_236.svg" alt="">Say Hello</a>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer__inner">
+    <div>
+      <div class="footer__brand">
+        <img src="assets/0_214.svg" alt="">
+        <span>OGANES</span>
+      </div>
+      <div class="footer__copy">© 2023 Oganes. Built with Tailwind &amp; Passion.</div>
+    </div>
+    <div class="socials">
+      <a href="#" aria-label="GitHub"><img src="assets/0_220.svg" alt="" width="20" height="12"></a>
+      <a href="#" aria-label="LinkedIn"><img src="assets/0_222.svg" alt="" width="16" height="16"></a>
+      <a href="#" aria-label="Twitter"><img src="assets/0_224.svg" alt="" width="20" height="20"></a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

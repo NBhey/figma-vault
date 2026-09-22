@@ -15,6 +15,8 @@
 | T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | codex | 2026-09-22T15:03Z | done |
 | T8 | Обработка 429 и Retry-After в FigmaClient: подождать и повторить вместо падения | `src/pull/**` | — | — | free |
 | T9 | Выводить токены из фактического использования, когда в файле нет shared styles | `src/pull/**` | — | — | free |
+| T10 | doc@1: `text.runs` — цветные фрагменты внутри текстового узла | `src/pull/**`, `src/shared/**` | — | — | free |
+| T11 | doc@1: градиентные заливки в `style.fill` | `src/pull/**`, `src/shared/**` | — | — | free |
 
 ## Зависимости
 
