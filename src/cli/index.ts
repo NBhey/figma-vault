@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { pullFigmaSelection } from "../pull/pull.js";
+import { runAdd } from "./add.js";
 import { runCheck } from "./check.js";
 import { runDemo } from "./demo.js";
 import { runInit } from "./init.js";
@@ -14,7 +14,8 @@ const USAGE = `figma-vault — локальное хранилище макет�
   figma-vault list                 что уже выгружено
   figma-vault mcp                  запустить MCP-сервер (вызывает агент, не человек)
 
-Опции add/list/mcp:
+Опции:
+  --no-assets                      только структура, без картинок (лимит рендера строже)
   --vault <каталог>                по умолчанию .figma-vault
 
 Токен: FIGMA_TOKEN в .env или в переменных окружения.
@@ -26,13 +27,22 @@ interface ParsedArgs {
   command: string;
   positional: string[];
   vaultDir: string;
+  noAssets: boolean;
+}
+
+/** Ссылку на макет принимаем и без подкоманды: `figma-vault <figma-url>` == `add <figma-url>`. */
+function looksLikeFigmaUrl(value: string): boolean {
+  return /^https?:\/\/(www\.)?figma\.com\//i.test(value);
 }
 
 export function parseArgs(argv: string[]): ParsedArgs {
   const args = [...argv];
-  const command = args.shift() ?? "help";
+  const first = args.shift();
+  const command = first === undefined ? "help" : looksLikeFigmaUrl(first) ? "add" : first;
   const positional: string[] = [];
+  if (first !== undefined && command === "add" && looksLikeFigmaUrl(first)) positional.push(first);
   let vaultDir = process.env.FIGMA_VAULT_DIR ?? DEFAULT_VAULT;
+  let noAssets = false;
 
   while (args.length > 0) {
     const arg = args.shift() as string;
@@ -40,6 +50,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
       const value = args.shift();
       if (!value) throw new Error("--vault требует путь к каталогу");
       vaultDir = value;
+    } else if (arg === "--no-assets") {
+      noAssets = true;
     } else if (arg === "--help" || arg === "-h") {
       positional.push("--help");
     } else if (arg.startsWith("--")) {
@@ -49,38 +61,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, positional, vaultDir };
-}
-
-async function add(figmaUrl: string | undefined, vaultDir: string): Promise<void> {
-  if (!figmaUrl) {
-    throw new Error(
-      "Нужна ссылка на фрейм: figma-vault add \"https://figma.com/design/...?node-id=1-42\"\n" +
-        "В Figma: правая кнопка по фрейму → Copy link to selection.",
-    );
-  }
-  const token = process.env.FIGMA_TOKEN;
-  if (!token) {
-    throw new Error(
-      "Не задан FIGMA_TOKEN.\n" +
-        "Figma → Settings → Security → Personal access tokens → Generate new token,\n" +
-        "scope: File content (read-only). Положите его в .env строкой FIGMA_TOKEN=figd_...",
-    );
-  }
-
-  process.stderr.write("Обращаюсь к Figma…\n");
-  const result = await pullFigmaSelection(figmaUrl, { token, vaultDir });
-
-  process.stdout.write(`\nГотово: ${result.docId}\n`);
-  process.stdout.write(`  узлов:    ${result.nodeCount}\n`);
-  process.stdout.write(`  каталог:  ${result.directory}\n`);
-  for (const warning of result.warnings ?? []) {
-    process.stdout.write(`  внимание: ${warning}\n`);
-  }
-  process.stdout.write(
-    "\nМакет в хранилище. Агент прочитает его через MCP без обращений к Figma.\n" +
-      "Закоммитьте каталог хранилища — тогда команде не нужен токен.\n",
-  );
+  return { command, positional, vaultDir, noAssets };
 }
 
 async function list(vaultDir: string): Promise<void> {
@@ -114,7 +95,7 @@ async function mcp(vaultDir: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { command, positional, vaultDir } = parseArgs(process.argv.slice(2));
+  const { command, positional, vaultDir, noAssets } = parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {
     process.stdout.write(`${USAGE}\n`);
@@ -127,7 +108,7 @@ async function main(): Promise<void> {
       return;
     case "add":
     case "pull":
-      await add(positional[0], vaultDir);
+      await runAdd(positional[0], { vaultDir, noAssets });
       return;
     case "demo":
       await runDemo(process.cwd(), vaultDir);
