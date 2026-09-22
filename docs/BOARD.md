@@ -11,7 +11,7 @@
 | T3 | Экспортёр: Figma REST → нормализация → запись в vault. CLI `pull <figma-url>` | `src/pull/**` | codex | 2026-09-22T14:44Z | done |
 | T4 | MCP-сервер stdio: 6 инструментов из контракта, читает только vault | `src/mcp/**` | claude | 2026-09-22T14:30Z | done |
 | T5 | Валидатор doc.json против контракта, общий для обеих сторон | `src/shared/**` | codex | 2026-09-22T14:59Z | done |
-| T6 | Проверка качества: по фикстуре агент восстанавливает HTML, сверка со `screenshot.png` | `docs/QUALITY.md` | codex | 2026-09-22T15:06Z | wip |
+| T6 | Проверка качества: по фикстуре агент восстанавливает HTML, сверка со `screenshot.png` | `docs/QUALITY.md` | codex | 2026-09-22T15:06Z | done |
 | T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | codex | 2026-09-22T15:03Z | done |
 
 ## Зависимости
