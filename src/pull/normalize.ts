@@ -9,6 +9,9 @@ import type {
   RenderTargets,
   VaultDocument,
   VaultNode,
+  VaultGradient,
+  VaultGradientStop,
+  VaultPoint,
   VaultStyle,
   VaultText,
   VaultTokens,
@@ -72,6 +75,42 @@ function colorToCss(paint: JsonRecord | undefined): string | undefined {
   const alpha = rounded((number(color.a) ?? 1) * (number(paint.opacity) ?? 1), 1);
   if (alpha < 1) return `rgba(${r},${g},${b},${alpha})`;
   return `#${[r, g, b].map((part) => part.toString(16).padStart(2, "0")).join("").toUpperCase()}`;
+}
+
+const GRADIENT_TYPES: Record<string, VaultGradient["type"]> = {
+  GRADIENT_LINEAR: "linear",
+  GRADIENT_RADIAL: "radial",
+  GRADIENT_ANGULAR: "angular",
+  GRADIENT_DIAMOND: "diamond",
+};
+
+function firstVisibleGradient(value: unknown): JsonRecord | undefined {
+  return records(value).find(
+    (paint) => paint.visible !== false && GRADIENT_TYPES[String(paint.type)] !== undefined,
+  );
+}
+
+function paintToGradient(paint: JsonRecord | undefined): VaultGradient | undefined {
+  if (!paint) return undefined;
+  const type = GRADIENT_TYPES[String(paint.type)];
+  if (!type) return undefined;
+
+  const handles = records(paint.gradientHandlePositions)
+    .slice(0, 3)
+    .map((handle) => ({ x: rounded(handle.x), y: rounded(handle.y) }));
+  if (handles.length !== 3) return undefined;
+
+  // Прозрачность самой заливки умножается на альфу каждого стопа.
+  const opacity = number(paint.opacity) ?? 1;
+  const stops = records(paint.gradientStops)
+    .map((stop) => ({
+      at: rounded(stop.position),
+      color: colorToCss({ type: "SOLID", color: stop.color, opacity }),
+    }))
+    .filter((stop): stop is VaultGradientStop => stop.color !== undefined);
+  if (stops.length === 0) return undefined;
+
+  return { type, handles: handles as [VaultPoint, VaultPoint, VaultPoint], stops };
 }
 
 function shadowToCss(effect: JsonRecord | undefined): string | undefined {
@@ -143,13 +182,16 @@ function radius(node: FigmaNode): [number, number, number, number] | undefined {
 function mapStyle(node: FigmaNode): VaultStyle | undefined {
   const solidFill = colorToCss(firstVisiblePaint(node.fills, "SOLID"));
   const solidStroke = colorToCss(firstVisiblePaint(node.strokes, "SOLID"));
+  // Сплошная заливка приоритетнее: градиент подставляется только когда её нет.
+  const gradientFill = solidFill === undefined ? paintToGradient(firstVisibleGradient(node.fills)) : undefined;
+  const gradientStroke = solidStroke === undefined ? paintToGradient(firstVisibleGradient(node.strokes)) : undefined;
   const effects = records(node.effects).filter((effect) => effect.visible !== false);
   const shadow = shadowToCss(effects.find((effect) => effect.type === "DROP_SHADOW" || effect.type === "INNER_SHADOW"));
   const blur = effects.find((effect) => effect.type === "LAYER_BLUR" || effect.type === "BACKGROUND_BLUR");
 
   const result: VaultStyle = {
-    fill: solidFill,
-    stroke: solidStroke,
+    fill: solidFill ?? gradientFill,
+    stroke: solidStroke ?? gradientStroke,
     strokeWidth: number(node.strokeWeight) === undefined ? undefined : rounded(node.strokeWeight),
     radius: radius(node),
     opacity: number(node.opacity) === undefined ? undefined : rounded(node.opacity, 1),
@@ -334,8 +376,9 @@ function inferTokens(root: VaultNode, tokens: VaultTokens): VaultTokens {
   const effectCounts = new Map<string, CountedValue<string>>();
 
   visitVault(root, (node) => {
+    // Градиент — не цвет, в палитру токенов он не идёт.
     for (const color of [node.style?.fill, node.style?.stroke, node.text?.color]) {
-      if (color) countValue(colorCounts, color, color);
+      if (typeof color === "string") countValue(colorCounts, color, color);
     }
 
     if (node.text?.font && node.text.size !== undefined && node.text.weight !== undefined) {

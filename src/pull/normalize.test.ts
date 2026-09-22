@@ -159,3 +159,102 @@ test("normalizeFigmaResponse does not replace shared text tokens with inferred n
   assert.equal(doc.root.children[0]?.text?.token, "label/md");
   assert.equal(Object.keys(doc.tokens.text).some((name) => name.startsWith("inferred/")), false);
 });
+
+test("normalizeFigmaResponse keeps gradient fills as handles and stops", () => {
+  const gradientResponse: FigmaNodesResponse = {
+    name: "Gradients",
+    nodes: {
+      "1:1": {
+        document: {
+          id: "1:1",
+          name: "Root",
+          type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
+          children: [
+            {
+              id: "1:2",
+              name: "Linear",
+              type: "RECTANGLE",
+              absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 50 },
+              fills: [
+                {
+                  type: "GRADIENT_LINEAR",
+                  opacity: 0.5,
+                  gradientHandlePositions: [
+                    { x: 0.5, y: 1 },
+                    { x: 0.5, y: 0 },
+                    { x: 1, y: 1 },
+                  ],
+                  gradientStops: [
+                    { position: 0, color: { r: 0, g: 0, b: 0, a: 1 } },
+                    { position: 1, color: { r: 1, g: 1, b: 1, a: 1 } },
+                  ],
+                },
+              ],
+            },
+            {
+              id: "1:3",
+              name: "Radial",
+              type: "ELLIPSE",
+              absoluteBoundingBox: { x: 0, y: 50, width: 50, height: 50 },
+              fills: [
+                {
+                  type: "GRADIENT_RADIAL",
+                  gradientHandlePositions: [
+                    { x: 0.5, y: 0.5 },
+                    { x: 1, y: 0.5 },
+                    { x: 0.5, y: 1 },
+                  ],
+                  gradientStops: [{ position: 0, color: { r: 1, g: 0, b: 0, a: 1 } }],
+                },
+              ],
+            },
+            {
+              id: "1:4",
+              name: "Solid wins",
+              type: "RECTANGLE",
+              absoluteBoundingBox: { x: 50, y: 50, width: 50, height: 50 },
+              fills: [
+                { type: "SOLID", color: { r: 0, g: 0, b: 1, a: 1 } },
+                {
+                  type: "GRADIENT_LINEAR",
+                  gradientHandlePositions: [
+                    { x: 0, y: 0 },
+                    { x: 1, y: 0 },
+                    { x: 0, y: 1 },
+                  ],
+                  gradientStops: [{ position: 0, color: { r: 1, g: 1, b: 1, a: 1 } }],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const doc = normalizeFigmaResponse(gradientResponse, "abc", "1:1");
+  const [linear, radial, solid] = doc.root.children;
+
+  const linearFill = linear?.style?.fill;
+  assert.ok(typeof linearFill === "object", "линейный градиент должен стать объектом");
+  assert.equal(linearFill.type, "linear");
+  assert.equal(linearFill.handles.length, 3);
+  assert.deepEqual(linearFill.handles[1], { x: 0.5, y: 0 });
+  // opacity заливки 0.5 умножается на альфу стопа
+  assert.equal(linearFill.stops[0]?.color, "rgba(0,0,0,0.5)");
+
+  const radialFill = radial?.style?.fill;
+  assert.ok(typeof radialFill === "object", "радиальный градиент теряться не должен");
+  assert.equal(radialFill.type, "radial");
+  assert.deepEqual(radialFill.handles[2], { x: 0.5, y: 1 });
+
+  assert.equal(solid?.style?.fill, "#0000FF", "сплошная заливка приоритетнее градиента");
+
+  const inferredColors = Object.values(doc.tokens.colors);
+  assert.equal(
+    inferredColors.every((value) => typeof value === "string"),
+    true,
+    "градиент не должен попадать в палитру токенов",
+  );
+});

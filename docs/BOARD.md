@@ -16,7 +16,7 @@
 | T8 | Обработка 429 и Retry-After в FigmaClient: подождать и повторить вместо падения | `src/pull/**` | codex → claude (§7) | 2026-09-22T18:05:06Z | done |
 | T9 | Выводить токены из фактического использования, когда в файле нет shared styles | `src/pull/**` | codex | 2026-09-22T16:45Z | done |
 | T10 | doc@1: `text.runs` — цветные фрагменты внутри текстового узла | `src/pull/**`, `src/shared/**` | — | — | free |
-| T11 | doc@1: градиентные заливки в `style.fill` | `src/pull/**`, `src/shared/**` | — | — | free |
+| T11 | doc@1: градиентные заливки в `style.fill` | `src/pull/**`, `src/shared/**` | claude (зона codex, §7) | 2026-09-22T19:10Z | done |
 | T15 | Иконки из fillGeometry вместо рендера через /v1/images — главный источник расхода лимита | `src/pull/**` | codex | 2026-09-22T17:44:14Z | done |
 | T12 | Пакет и единый CLI: init, add, list, mcp; переносимый .mcp.json; слэш-команда /figma | `src/cli/**`, корень | claude | 2026-09-22T18:05Z | done |
 | T13 | Инструкция по раздаче команде и подключению к рабочему проекту | `docs/INTEGRATION.md` | claude | 2026-09-22T18:05Z | done |

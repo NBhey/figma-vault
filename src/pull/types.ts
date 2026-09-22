@@ -50,9 +50,30 @@ export interface VaultLayout {
   wrap?: boolean;
 }
 
+export interface VaultPoint {
+  x: number;
+  y: number;
+}
+
+export interface VaultGradientStop {
+  at: number;
+  color: string;
+}
+
+/**
+ * Градиент хранится тремя ручками Figma, а не углом: у радиального угла нет,
+ * нужны центр, радиус и наклон осей. Из трёх ручек однозначно строятся все типы.
+ * Координаты нормализованы относительно рамки узла: 0 — её начало, 1 — конец.
+ */
+export interface VaultGradient {
+  type: "linear" | "radial" | "angular" | "diamond";
+  handles: [VaultPoint, VaultPoint, VaultPoint];
+  stops: VaultGradientStop[];
+}
+
 export interface VaultStyle {
-  fill?: string;
-  stroke?: string;
+  fill?: string | VaultGradient;
+  stroke?: string | VaultGradient;
   strokeWidth?: number;
   radius?: [number, number, number, number];
   opacity?: number;

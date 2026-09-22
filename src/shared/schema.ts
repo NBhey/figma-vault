@@ -20,9 +20,25 @@ export const vaultLayoutSchema = z.object({
   wrap: z.boolean().optional(),
 }).strict();
 
+/**
+ * Градиент описывается тремя ручками Figma, а не углом: у радиального угла нет.
+ * Координаты нормализованы относительно рамки узла.
+ */
+const gradientPoint = z.object({ x: finiteNumber, y: finiteNumber }).strict();
+
+export const vaultGradientSchema = z.object({
+  type: z.enum(["linear", "radial", "angular", "diamond"]),
+  handles: z.tuple([gradientPoint, gradientPoint, gradientPoint]),
+  stops: z
+    .array(z.object({ at: finiteNumber.min(0).max(1), color: cssColor }).strict())
+    .min(1),
+}).strict();
+
+const paint = z.union([cssColor, vaultGradientSchema]);
+
 export const vaultStyleSchema = z.object({
-  fill: cssColor.optional(),
-  stroke: cssColor.optional(),
+  fill: paint.optional(),
+  stroke: paint.optional(),
   strokeWidth: nonNegative.optional(),
   radius: z.tuple([nonNegative, nonNegative, nonNegative, nonNegative]).optional(),
   opacity: finiteNumber.min(0).max(1).optional(),
