@@ -286,6 +286,107 @@ function extractTokens(root: FigmaNode, entry: FigmaNodeEntry): VaultTokens {
   return tokens;
 }
 
+function visitVault(node: VaultNode, callback: (node: VaultNode) => void): void {
+  callback(node);
+  for (const child of node.children) visitVault(child, callback);
+}
+
+interface CountedValue<T> {
+  value: T;
+  count: number;
+}
+
+function countValue<T>(counts: Map<string, CountedValue<T>>, signature: string, value: T): void {
+  const existing = counts.get(signature);
+  if (existing) existing.count += 1;
+  else counts.set(signature, { value, count: 1 });
+}
+
+function repeatedValues<T>(counts: Map<string, CountedValue<T>>): Array<[string, CountedValue<T>]> {
+  return [...counts.entries()]
+    .filter(([, item]) => item.count >= 2)
+    .sort(([signatureA, itemA], [signatureB, itemB]) =>
+      itemB.count - itemA.count || signatureA.localeCompare(signatureB));
+}
+
+function tokenSlug(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/^#/, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "") || "value";
+}
+
+function stableHash(value: string): string {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
+
+function inferTokens(root: VaultNode, tokens: VaultTokens): VaultTokens {
+  const colorCounts = new Map<string, CountedValue<string>>();
+  const textCounts = new Map<string, CountedValue<VaultTokens["text"][string]>>();
+  const effectCounts = new Map<string, CountedValue<string>>();
+
+  visitVault(root, (node) => {
+    for (const color of [node.style?.fill, node.style?.stroke, node.text?.color]) {
+      if (color) countValue(colorCounts, color, color);
+    }
+
+    if (node.text?.font && node.text.size !== undefined && node.text.weight !== undefined) {
+      const value: VaultTokens["text"][string] = {
+        font: node.text.font,
+        size: node.text.size,
+        weight: node.text.weight,
+        lineHeight: node.text.lineHeight,
+        letterSpacing: node.text.letterSpacing,
+      };
+      countValue(textCounts, JSON.stringify(value), value);
+    }
+
+    if (node.style?.shadow) countValue(effectCounts, node.style.shadow, node.style.shadow);
+  });
+
+  if (Object.keys(tokens.colors).length === 0) {
+    for (const [, item] of repeatedValues(colorCounts)) {
+      tokens.colors[`inferred/color/${tokenSlug(item.value)}`] = item.value;
+    }
+  }
+
+  const inferredTextNames = new Map<string, string>();
+  if (Object.keys(tokens.text).length === 0) {
+    for (const [signature, item] of repeatedValues(textCounts)) {
+      const font = tokenSlug(item.value.font ?? "font");
+      const name = `inferred/text/${font}-${item.value.size}-${item.value.weight}-${stableHash(signature).slice(0, 6)}`;
+      tokens.text[name] = item.value;
+      inferredTextNames.set(signature, name);
+    }
+
+    visitVault(root, (node) => {
+      if (!node.text || node.text.token || !node.text.font || node.text.size === undefined || node.text.weight === undefined) return;
+      const signature = JSON.stringify({
+        font: node.text.font,
+        size: node.text.size,
+        weight: node.text.weight,
+        lineHeight: node.text.lineHeight,
+        letterSpacing: node.text.letterSpacing,
+      });
+      node.text.token = inferredTextNames.get(signature);
+    });
+  }
+
+  if (Object.keys(tokens.effects).length === 0) {
+    for (const [signature, item] of repeatedValues(effectCounts)) {
+      tokens.effects[`inferred/effect/${stableHash(signature)}`] = item.value;
+    }
+  }
+
+  return tokens;
+}
+
 export function normalizeFigmaResponse(
   response: FigmaNodesResponse,
   fileKey: string,
@@ -297,6 +398,8 @@ export function normalizeFigmaResponse(
   const root = normalizeNode(entry.document, undefined, entry, true);
   if (!root) throw new Error(`Figma node ${nodeId} has no visible content`);
 
+  const tokens = inferTokens(root, extractTokens(entry.document, entry));
+
   return {
     schema: "figma-vault/doc@0",
     source: {
@@ -307,7 +410,7 @@ export function normalizeFigmaResponse(
       exportedAt,
       figmaVersion: response.version ?? "",
     },
-    tokens: extractTokens(entry.document, entry),
+    tokens,
     root,
   };
 }
@@ -326,4 +429,3 @@ export function collectRenderTargets(root: FigmaNode): RenderTargets {
 export function countVaultNodes(root: VaultNode): number {
   return 1 + root.children.reduce((total, child) => total + countVaultNodes(child), 0);
 }
-

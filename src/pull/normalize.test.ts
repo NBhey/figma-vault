@@ -105,3 +105,57 @@ test("collectRenderTargets separates image fills and vectors", () => {
   assert.deepEqual(targets, { png: ["2:4"], svg: ["2:5"] });
 });
 
+test("normalizeFigmaResponse infers repeated colors, typography, and effects without shared styles", () => {
+  const repeatedStyleResponse: FigmaNodesResponse = {
+    name: "Inferred tokens",
+    version: "1",
+    nodes: {
+      "1:1": {
+        styles: {},
+        document: {
+          id: "1:1",
+          name: "Screen",
+          type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 320, height: 240 },
+          children: [
+            {
+              id: "1:2",
+              name: "Title",
+              type: "TEXT",
+              characters: "One",
+              absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 24 },
+              fills: [{ type: "SOLID", color: { r: 17 / 255, g: 34 / 255, b: 51 / 255 } }],
+              effects: [{ type: "DROP_SHADOW", offset: { x: 0, y: 2 }, radius: 4, spread: 0, color: { r: 0, g: 0, b: 0, a: 0.25 } }],
+              style: { fontFamily: "Inter", fontSize: 16, fontWeight: 500, lineHeightPx: 24, letterSpacing: 0 },
+            },
+            {
+              id: "1:3",
+              name: "Subtitle",
+              type: "TEXT",
+              characters: "Two",
+              absoluteBoundingBox: { x: 0, y: 32, width: 100, height: 24 },
+              fills: [{ type: "SOLID", color: { r: 17 / 255, g: 34 / 255, b: 51 / 255 } }],
+              effects: [{ type: "DROP_SHADOW", offset: { x: 0, y: 2 }, radius: 4, spread: 0, color: { r: 0, g: 0, b: 0, a: 0.25 } }],
+              style: { fontFamily: "Inter", fontSize: 16, fontWeight: 500, lineHeightPx: 24, letterSpacing: 0 },
+            },
+          ],
+        },
+      },
+    },
+  };
+
+  const doc = normalizeFigmaResponse(repeatedStyleResponse, "abc", "1:1");
+  assert.equal(doc.tokens.colors["inferred/color/112233"], "#112233");
+  const textToken = Object.keys(doc.tokens.text).find((name) => name.startsWith("inferred/text/inter-16-500-"));
+  assert.ok(textToken);
+  assert.equal(doc.root.children[0]?.text?.token, textToken);
+  assert.equal(doc.root.children[1]?.text?.token, textToken);
+  assert.equal(Object.keys(doc.tokens.effects).length, 1);
+});
+
+test("normalizeFigmaResponse does not replace shared text tokens with inferred names", () => {
+  const doc = normalizeFigmaResponse(response, "abc123", "1:2");
+  assert.ok(doc.tokens.text["label/md"]);
+  assert.equal(doc.root.children[0]?.text?.token, "label/md");
+  assert.equal(Object.keys(doc.tokens.text).some((name) => name.startsWith("inferred/")), false);
+});

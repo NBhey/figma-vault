@@ -14,7 +14,7 @@
 | T6 | Проверка качества: по фикстуре агент восстанавливает HTML, сверка со `screenshot.png` | `docs/QUALITY.md` | codex | 2026-09-22T15:06Z | done |
 | T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | codex | 2026-09-22T15:03Z | done |
 | T8 | Обработка 429 и Retry-After в FigmaClient: подождать и повторить вместо падения | `src/pull/**` | — | — | free |
-| T9 | Выводить токены из фактического использования, когда в файле нет shared styles | `src/pull/**` | codex | 2026-09-22T16:45Z | wip |
+| T9 | Выводить токены из фактического использования, когда в файле нет shared styles | `src/pull/**` | codex | 2026-09-22T16:45Z | done |
 | T10 | doc@1: `text.runs` — цветные фрагменты внутри текстового узла | `src/pull/**`, `src/shared/**` | — | — | free |
 | T11 | doc@1: градиентные заливки в `style.fill` | `src/pull/**`, `src/shared/**` | — | — | free |
 | T12 | Пакет и единый CLI: init, add, list, mcp; переносимый .mcp.json; слэш-команда /figma | `src/cli/**`, корень | claude | 2026-09-22T18:05Z | done |
