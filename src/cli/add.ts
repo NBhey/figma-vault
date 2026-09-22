@@ -73,9 +73,18 @@ export async function runAdd(figmaUrl: string | undefined, options: AddOptions):
     out("Закоммитьте каталог хранилища — тогда команде не нужен токен.");
   } catch (error) {
     if (error instanceof FigmaApiError && error.status === 429) {
+      const wait =
+        error.retryAfterSeconds !== undefined
+          ? `Figma просит подождать ${humanDuration(error.retryAfterSeconds)}.\n`
+          : "";
+      const plan = error.planTier ? `Тариф: ${error.planTier}. ` : "";
+      const kind = error.rateLimitType ? `Тип лимита: ${error.rateLimitType}.` : "";
+      const about = plan || kind ? `${plan}${kind}\n` : "";
       throw new Error(
-        "Figma ответила 429: исчерпан лимит обращений.\n\n" +
-          "Чаще всего выбивается рендер картинок — у него лимит строже, чем у чтения структуры.\n" +
+        "Figma ответила 429: исчерпан лимит обращений, повторы не помогли.\n" +
+          wait +
+          about +
+          "\nЧаще всего выбивается рендер картинок — у него лимит строже, чем у чтения структуры.\n" +
           "Структуру макета обычно можно забрать прямо сейчас:\n\n" +
           `  figma-vault add "<ссылка>" --vault ${options.vaultDir} --no-assets\n\n` +
           "Вёрстку по ней восстановить можно; картинки доберёте позже тем же add без флага.",

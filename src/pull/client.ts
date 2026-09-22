@@ -7,49 +7,124 @@ interface ImagesResponse {
   images?: Record<string, string | null>;
 }
 
+export interface FigmaRetryOptions {
+  /** Number of retries after the initial request. */
+  maxRetries?: number;
+  /** Do not leave an interactive CLI sleeping for hours or days. */
+  maxDelayMs?: number;
+  sleep?: (milliseconds: number) => Promise<void>;
+}
+
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_MAX_DELAY_MS = 60_000;
+
+function defaultSleep(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function retryAfterSeconds(response: Response): number | undefined {
+  const raw = response.headers.get("retry-after");
+  if (raw === null || raw.trim() === "") return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0 ? value : undefined;
+}
+
 export class FigmaApiError extends Error {
+  readonly retryAfterSeconds?: number;
+  readonly planTier?: string;
+  readonly rateLimitType?: string;
+  readonly upgradeLink?: string;
+
   constructor(
     message: string,
     readonly status?: number,
+    rateLimit?: {
+      retryAfterSeconds?: number;
+      planTier?: string;
+      rateLimitType?: string;
+      upgradeLink?: string;
+    },
   ) {
     super(message);
     this.name = "FigmaApiError";
+    this.retryAfterSeconds = rateLimit?.retryAfterSeconds;
+    this.planTier = rateLimit?.planTier;
+    this.rateLimitType = rateLimit?.rateLimitType;
+    this.upgradeLink = rateLimit?.upgradeLink;
   }
 }
 
 export class FigmaClient {
+  private readonly maxRetries: number;
+  private readonly maxDelayMs: number;
+  private readonly sleep: (milliseconds: number) => Promise<void>;
+
   constructor(
     private readonly token: string,
     private readonly fetcher: FetchLike = fetch,
     private readonly baseUrl = "https://api.figma.com/v1",
+    retry: FigmaRetryOptions = {},
   ) {
     if (!token.trim()) throw new Error("FIGMA_TOKEN is empty");
+    this.maxRetries = Math.max(0, Math.floor(retry.maxRetries ?? DEFAULT_MAX_RETRIES));
+    this.maxDelayMs = Math.max(0, retry.maxDelayMs ?? DEFAULT_MAX_DELAY_MS);
+    this.sleep = retry.sleep ?? defaultSleep;
   }
 
-  private async getJson<T>(path: string): Promise<T> {
+  private async request(path: string): Promise<Response> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30_000);
     try {
-      const response = await this.fetcher(`${this.baseUrl}${path}`, {
+      return await this.fetcher(`${this.baseUrl}${path}`, {
         headers: { "X-Figma-Token": this.token },
         signal: controller.signal,
       });
-      if (!response.ok) {
-        const detail = (await response.text()).slice(0, 500);
-        throw new FigmaApiError(
-          `Figma API ${response.status} ${response.statusText}${detail ? `: ${detail}` : ""}`,
-          response.status,
-        );
-      }
-      return await response.json() as T;
     } catch (error) {
-      if (error instanceof FigmaApiError) throw error;
       if (error instanceof Error && error.name === "AbortError") {
         throw new FigmaApiError("Figma API request timed out");
       }
       throw error;
     } finally {
       clearTimeout(timeout);
+    }
+  }
+
+  private async getJson<T>(path: string): Promise<T> {
+    let retries = 0;
+    while (true) {
+      const response = await this.request(path);
+      if (!response.ok) {
+        const detail = (await response.text()).slice(0, 500);
+        const retryAfter = retryAfterSeconds(response);
+        const rateLimit = response.status === 429 ? {
+          retryAfterSeconds: retryAfter,
+          planTier: response.headers.get("x-figma-plan-tier") ?? undefined,
+          rateLimitType: response.headers.get("x-figma-rate-limit-type") ?? undefined,
+          upgradeLink: response.headers.get("x-figma-upgrade-link") ?? undefined,
+        } : undefined;
+
+        if (response.status === 429 && retries < this.maxRetries) {
+          // Figma назвала срок — уважаем его. Не назвала — отступаем по 1с, 2с, 4с:
+          // равные паузы подряд против лимита бесполезны.
+          const delayMs =
+            retryAfter !== undefined ? retryAfter * 1000 : 2 ** retries * 1000;
+          if (delayMs <= this.maxDelayMs) {
+            retries += 1;
+            await this.sleep(delayMs);
+            continue;
+          }
+        }
+
+        const waitHint = response.status === 429 && retryAfter !== undefined
+          ? `; retry after ${retryAfter} seconds`
+          : "";
+        throw new FigmaApiError(
+          `Figma API ${response.status} ${response.statusText}${waitHint}${detail ? `: ${detail}` : ""}`,
+          response.status,
+          rateLimit,
+        );
+      }
+      return await response.json() as T;
     }
   }
 
@@ -95,4 +170,3 @@ export function getRootEntry(response: FigmaNodesResponse, nodeId: string): Figm
   if (!entry) throw new FigmaApiError(`Figma returned an empty node for ${nodeId}`, 404);
   return entry;
 }
-

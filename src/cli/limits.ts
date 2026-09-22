@@ -25,6 +25,8 @@ interface Probe {
   status: number;
   ok: boolean;
   retryAfter: number | null;
+  plan: string | null;
+  kind: string | null;
   detail: string;
 }
 
@@ -44,13 +46,23 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
         detail = body.slice(0, 160);
       }
     }
-    return { label, status: response.status, ok: response.ok, retryAfter, detail };
+    return {
+      label,
+      status: response.status,
+      ok: response.ok,
+      retryAfter,
+      plan: response.headers.get("x-figma-plan-tier"),
+      kind: response.headers.get("x-figma-rate-limit-type"),
+      detail,
+    };
   } catch (error) {
     return {
       label,
       status: 0,
       ok: false,
       retryAfter: null,
+      plan: null,
+      kind: null,
       detail: error instanceof Error ? error.message : String(error),
     };
   }
@@ -86,6 +98,12 @@ export async function runLimits(figmaUrl: string | undefined): Promise<void> {
     out(`[${mark}] ${p.label} — HTTP ${p.status || "нет ответа"}`);
     if (p.retryAfter && p.retryAfter > 0) {
       out(`         освободится примерно через ${humanDuration(p.retryAfter)}`);
+    }
+    if (p.plan || p.kind) {
+      const bits = [p.plan ? `тариф ${p.plan}` : null, p.kind ? `тип лимита ${p.kind}` : null]
+        .filter(Boolean)
+        .join(", ");
+      out(`         ${bits}`);
     }
     if (!p.ok && p.detail) out(`         ${p.detail}`);
   }
