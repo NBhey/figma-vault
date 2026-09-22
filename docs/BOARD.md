@@ -13,6 +13,7 @@
 | T5 | Валидатор doc.json против контракта, общий для обеих сторон | `src/shared/**` | codex | 2026-09-22T14:59Z | done |
 | T6 | Проверка качества: по фикстуре агент восстанавливает HTML, сверка со `screenshot.png` | `docs/QUALITY.md` | codex | 2026-09-22T15:06Z | done |
 | T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | codex | 2026-09-22T15:03Z | done |
+| T8 | Обработка 429 и Retry-After в FigmaClient: подождать и повторить вместо падения | `src/pull/**` | — | — | free |
 
 ## Зависимости
 
