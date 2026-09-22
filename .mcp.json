@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "figma-vault": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "C:\\Study\\figma\\dist\\mcp\\index.js",
+        "--vault",
+        "C:\\Study\\figma\\vault\\example"
+      ],
+      "env": {}
+    }
+  }
+}
