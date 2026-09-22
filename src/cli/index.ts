@@ -3,11 +3,12 @@
 import { runAdd } from "./add.js";
 import { runCheck } from "./check.js";
 import { runDemo } from "./demo.js";
-import { runInit } from "./init.js";
+import { runInit, runInitGlobal } from "./init.js";
 
 const USAGE = `figma-vault — локальное хранилище макетов Figma для AI-агентов
 
   figma-vault init                 подключить хранилище к текущему проекту
+  figma-vault init --global        то же, но без единого файла в репозитории проекта
   figma-vault add <figma-url>      выгрузить макет в хранилище
   figma-vault demo                 положить демо-макет в хранилище (без токена)
   figma-vault check                проверить, что вся цепочка работает
@@ -28,6 +29,7 @@ interface ParsedArgs {
   positional: string[];
   vaultDir: string;
   noAssets: boolean;
+  globalMode: boolean;
 }
 
 /** Ссылку на макет принимаем и без подкоманды: `figma-vault <figma-url>` == `add <figma-url>`. */
@@ -43,6 +45,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   if (first !== undefined && command === "add" && looksLikeFigmaUrl(first)) positional.push(first);
   let vaultDir = process.env.FIGMA_VAULT_DIR ?? DEFAULT_VAULT;
   let noAssets = false;
+  let globalMode = false;
 
   while (args.length > 0) {
     const arg = args.shift() as string;
@@ -50,6 +53,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
       const value = args.shift();
       if (!value) throw new Error("--vault требует путь к каталогу");
       vaultDir = value;
+    } else if (arg === "--global") {
+      globalMode = true;
     } else if (arg === "--no-assets") {
       noAssets = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -61,7 +66,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, positional, vaultDir, noAssets };
+  return { command, positional, vaultDir, noAssets, globalMode };
 }
 
 async function list(vaultDir: string): Promise<void> {
@@ -95,7 +100,7 @@ async function mcp(vaultDir: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { command, positional, vaultDir, noAssets } = parseArgs(process.argv.slice(2));
+  const { command, positional, vaultDir, noAssets, globalMode } = parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {
     process.stdout.write(`${USAGE}\n`);
@@ -104,7 +109,7 @@ async function main(): Promise<void> {
 
   switch (command) {
     case "init":
-      await runInit(process.cwd(), vaultDir);
+      await (globalMode ? runInitGlobal(vaultDir) : runInit(process.cwd(), vaultDir));
       return;
     case "add":
     case "pull":

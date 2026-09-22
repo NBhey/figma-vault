@@ -98,6 +98,43 @@ allowed-tools: Bash(npx figma-vault:*), Read, Write, Edit, Glob, Grep
    (градиенты, разноцветные фрагменты внутри одного текста) — это известные пробелы.
 `;
 
+/**
+ * Режим без следа в репозитории: хранилище в домашнем каталоге, сервер — в пользовательском
+ * конфиге агента. Рабочий проект о существовании инструмента не узнаёт.
+ * Конфиг агента не правим сами: это чужой файл с состоянием, ломать его нельзя.
+ */
+export async function runInitGlobal(vaultDirArg: string): Promise<void> {
+  const out = (line: string) => process.stdout.write(`${line}\n`);
+  const home = process.env.USERPROFILE ?? process.env.HOME ?? "";
+  const vault =
+    vaultDirArg === ".figma-vault" ? path.join(home, ".figma-vault") : path.resolve(vaultDirArg);
+
+  await mkdir(vault, { recursive: true });
+  out(`Хранилище: ${vault}`);
+  out("В рабочем репозитории не создано ни одного файла.");
+  out("");
+  out("Осталось два шага, оба вне проекта.");
+  out("");
+  out("1. Токен — в переменную окружения пользователя, не в файл проекта:");
+  out("     setx FIGMA_TOKEN \"figd_...\"            (Windows, новый терминал после)");
+  out("     export FIGMA_TOKEN=figd_...             (macOS/Linux, в ~/.zshrc или ~/.bashrc)");
+  out("   Нужен только тому, кто выгружает макеты.");
+  out("");
+  out("2. Зарегистрировать сервер в пользовательском конфиге агента:");
+  out("");
+  out("   Claude Code:");
+  out(`     claude mcp add --scope user figma-vault -- npx -y figma-vault mcp --vault "${vault}"`);
+  out("");
+  out("   Codex — в ~/.codex/config.toml:");
+  out("     [mcp_servers.figma-vault]");
+  out('     command = "npx"');
+  out(`     args = ["-y", "figma-vault", "mcp", "--vault", ${JSON.stringify(vault)}]`);
+  out("");
+  out("Дальше из любого каталога:");
+  out(`  figma-vault add "<ссылка на фрейм>" --vault "${vault}"`);
+  out(`  figma-vault check --vault "${vault}"`);
+}
+
 export async function runInit(cwd: string, vaultDir: string): Promise<void> {
   const out = (line: string) => process.stdout.write(`${line}\n`);
 
