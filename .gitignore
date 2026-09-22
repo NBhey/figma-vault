@@ -5,3 +5,6 @@ vault/*
 !vault/example/
 *.log
 .claude/settings.local.json
+
+# Восстановленные рабочие макеты не публикуем
+restored/work*/
