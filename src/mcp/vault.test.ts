@@ -171,7 +171,7 @@ test("пустой vault объясняет, что делать дальше", 
   const empty = new Vault(path.join(repoRoot, "vault", "example", "EXAMPLE1234_1_1", "assets"));
   await assert.rejects(() => empty.list(), (error: Error) => {
     assert.ok(error instanceof VaultError);
-    assert.match(error.message, /npm run pull/);
+    assert.match(error.message, /figma-vault add/);
     return true;
   });
 });

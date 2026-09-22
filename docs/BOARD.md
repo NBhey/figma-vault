@@ -17,6 +17,8 @@
 | T9 | Выводить токены из фактического использования, когда в файле нет shared styles | `src/pull/**` | — | — | free |
 | T10 | doc@1: `text.runs` — цветные фрагменты внутри текстового узла | `src/pull/**`, `src/shared/**` | — | — | free |
 | T11 | doc@1: градиентные заливки в `style.fill` | `src/pull/**`, `src/shared/**` | — | — | free |
+| T12 | Пакет и единый CLI: init, add, list, mcp; переносимый .mcp.json; слэш-команда /figma | `src/cli/**`, корень | claude | 2026-09-22T18:05Z | done |
+| T13 | Инструкция по раздаче команде и подключению к рабочему проекту | `docs/INTEGRATION.md` | claude | 2026-09-22T18:05Z | done |
 
 ## Зависимости
 

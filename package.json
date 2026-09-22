@@ -1,15 +1,13 @@
 {
   "name": "figma-vault",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
   "type": "module",
   "description": "Локальное хранилище макетов Figma + MCP-сервер для AI-агентов",
   "engines": {
     "node": ">=22"
   },
   "bin": {
-    "figma-vault-pull": "./dist/pull/index.js",
-    "figma-vault-mcp": "./dist/mcp/index.js"
+    "figma-vault": "./dist/cli/index.js"
   },
   "scripts": {
     "pull": "node --env-file-if-exists=.env --import tsx src/pull/index.ts",
@@ -18,7 +16,9 @@
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
-    "dev": "node scripts/serve.mjs"
+    "dev": "node scripts/serve.mjs",
+    "prepare": "npm run build",
+    "cli": "node --env-file-if-exists=.env --import tsx src/cli/index.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.20.0",
@@ -28,5 +28,16 @@
     "@types/node": "^22.15.0",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
-  }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "figma",
+    "mcp",
+    "ai-agents",
+    "design-to-code"
+  ],
+  "license": "MIT"
 }

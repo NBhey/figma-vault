@@ -1,0 +1,133 @@
+import { mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+
+/** Команда MCP-сервера в конфиге проекта: работает и при локальной установке, и через npx. */
+const MCP_SERVER_NAME = "figma-vault";
+
+interface McpConfig {
+  mcpServers?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+async function readJson<T>(file: string): Promise<T | null> {
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as T;
+  } catch {
+    return null;
+  }
+}
+
+async function exists(file: string): Promise<boolean> {
+  try {
+    await readFile(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Регистрирует сервер в .mcp.json, не затирая чужие записи. */
+async function writeMcpConfig(cwd: string, vaultDir: string): Promise<string> {
+  const file = path.join(cwd, ".mcp.json");
+  const existing = (await readJson<McpConfig>(file)) ?? {};
+  const servers = { ...(existing.mcpServers ?? {}) };
+
+  const entry = {
+    type: "stdio",
+    command: "npx",
+    args: ["-y", "figma-vault", "mcp", "--vault", vaultDir],
+    env: {},
+  };
+
+  const before = JSON.stringify(servers[MCP_SERVER_NAME]);
+  if (before === JSON.stringify(entry)) return "запись уже настроена";
+
+  servers[MCP_SERVER_NAME] = entry;
+  const next: McpConfig = { ...existing, mcpServers: servers };
+  await writeFile(file, `${JSON.stringify(next, null, 2)}\n`, "utf8");
+  return before === undefined ? "запись добавлена" : "запись обновлена";
+}
+
+/** Дописывает строки в .gitignore, если их там ещё нет. */
+async function ensureGitignore(cwd: string, lines: string[]): Promise<string[]> {
+  const file = path.join(cwd, ".gitignore");
+  const current = (await exists(file)) ? await readFile(file, "utf8") : "";
+  const present = new Set(current.split(/\r?\n/).map((l) => l.trim()));
+  const missing = lines.filter((l) => !present.has(l));
+  if (missing.length === 0) return [];
+  const prefix = current.length > 0 && !current.endsWith("\n") ? "\n" : "";
+  await writeFile(file, `${current}${prefix}${missing.join("\n")}\n`, "utf8");
+  return missing;
+}
+
+const SLASH_COMMAND = (vaultDir: string) => `---
+description: Выгрузить макет Figma и сверстать его
+argument-hint: <ссылка на фрейм Figma>
+allowed-tools: Bash(npx figma-vault:*), Read, Write, Edit, Glob, Grep
+---
+
+Свёрстай интерфейс по макету Figma: $ARGUMENTS
+
+Порядок работы:
+
+1. Выгрузи макет в локальное хранилище одной командой:
+   \`npx figma-vault add "$ARGUMENTS" --vault ${vaultDir}\`
+   Если команда сообщает, что нет FIGMA_TOKEN — скажи об этом и остановись.
+
+2. Прочитай макет через MCP-сервер \`figma-vault\`, а НЕ через Figma:
+   - \`vault_list\` — найди docId только что выгруженного макета;
+   - \`vault_get_doc\` с небольшим maxDepth — пойми структуру;
+   - \`vault_get_node\` — углубляйся в нужные секции;
+   - \`vault_get_tokens\` — цвета и типографика, если они есть.
+
+3. Важные особенности данных:
+   - порядок \`children\` — это z-order Figma, а не визуальный. Реальный порядок
+     секций сверху вниз даёт сортировка по \`layout.y\`;
+   - \`layout.mode: row|column\` — это auto-layout, верстай флексом с указанными
+     \`gap\` и \`padding\`. При \`mode: none\` используй \`x/y/w/h\` относительно родителя;
+   - ассеты из \`node.asset.path\` лежат в каталоге макета в хранилище, бери их оттуда;
+   - если \`tokens\` пусты, собери палитру сам по повторяющимся \`style.fill\`,
+     а не хардкодь цвет в каждом правиле.
+
+4. Свёрстай, следуя конвенциям этого проекта: посмотри на соседние компоненты и
+   повтори их стиль, именование и способ работы со стилями. Не тащи новые зависимости.
+
+5. В конце коротко перечисли, что именно не удалось восстановить из данных
+   (градиенты, разноцветные фрагменты внутри одного текста) — это известные пробелы.
+`;
+
+export async function runInit(cwd: string, vaultDir: string): Promise<void> {
+  const out = (line: string) => process.stdout.write(`${line}\n`);
+
+  await mkdir(path.join(cwd, vaultDir), { recursive: true });
+  out(`Хранилище:      ${vaultDir}/`);
+
+  const mcpState = await writeMcpConfig(cwd, vaultDir);
+  out(`.mcp.json:      ${mcpState} (сервер ${MCP_SERVER_NAME})`);
+
+  const added = await ensureGitignore(cwd, [".env"]);
+  out(`.gitignore:     ${added.length > 0 ? `добавлено ${added.join(", ")}` : "менять не потребовалось"}`);
+
+  const envExample = path.join(cwd, ".env.example");
+  if (!(await exists(envExample))) {
+    await writeFile(envExample, "FIGMA_TOKEN=\n", "utf8");
+    out(".env.example:   создан");
+  } else {
+    out(".env.example:   уже есть");
+  }
+
+  const commandFile = path.join(cwd, ".claude", "commands", "figma.md");
+  await mkdir(path.dirname(commandFile), { recursive: true });
+  await writeFile(commandFile, SLASH_COMMAND(vaultDir), "utf8");
+  out(".claude/commands/figma.md: создан");
+
+  out("");
+  out("Дальше:");
+  out("  1. Положите Figma-токен в .env строкой FIGMA_TOKEN=figd_...");
+  out("     (нужен только тому, кто выгружает макеты)");
+  out('  2. npx figma-vault add "<ссылка на фрейм>"');
+  out(`  3. Закоммитьте ${vaultDir}/ — тогда команде токен не нужен вообще`);
+  out("  4. В Claude Code: /figma <ссылка на фрейм>");
+  out("");
+  out("Codex и другие агенты берут тот же сервер из .mcp.json.");
+}

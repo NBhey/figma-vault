@@ -142,7 +142,7 @@ export class Vault {
   async list(): Promise<VaultIndex> {
     return (await this.readJson(
       path.join(this.root, "index.json"),
-      `В ${this.root} нет index.json — vault пуст. Сначала выгрузите макет: npm run pull -- <figma-url>`,
+      `В ${this.root} нет index.json — vault пуст. Сначала выгрузите макет: npx figma-vault add "<ссылка на фрейм>"`,
       validateVaultIndex,
     )) as VaultIndex;
   }
