@@ -4,3 +4,4 @@ dist/
 vault/*
 !vault/example/
 *.log
+.claude/settings.local.json
