@@ -10,7 +10,7 @@
     "figma-vault-mcp": "./dist/mcp/index.js"
   },
   "scripts": {
-    "pull": "tsx src/pull/index.ts",
+    "pull": "node --env-file-if-exists=.env --import tsx src/pull/index.ts",
     "mcp": "tsx src/mcp/index.ts",
     "mcp:example": "tsx src/mcp/index.ts --vault vault/example",
     "build": "tsc -p tsconfig.json",
