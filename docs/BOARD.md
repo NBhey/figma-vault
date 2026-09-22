@@ -12,7 +12,7 @@
 | T4 | MCP-сервер stdio: 6 инструментов из контракта, читает только vault | `src/mcp/**` | claude | 2026-09-22T14:30Z | done |
 | T5 | Валидатор doc.json против контракта, общий для обеих сторон | `src/shared/**` | codex | 2026-09-22T14:59Z | done |
 | T6 | Проверка качества: по фикстуре агент восстанавливает HTML, сверка со `screenshot.png` | `docs/QUALITY.md` | — | — | free |
-| T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | — | — | free |
+| T7 | README: как выгрузить макет и подключить MCP к Claude Code и Codex | `README.md` | codex | 2026-09-22T15:03Z | done |
 
 ## Зависимости
 
