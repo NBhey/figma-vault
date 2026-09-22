@@ -1,4 +1,5 @@
 import { safeNodeId } from "./url.js";
+import { canGenerateSvgAsset, needsRemoteSvgRender } from "./geometry.js";
 import type {
   FigmaNode,
   FigmaNodeEntry,
@@ -192,7 +193,7 @@ function assetFor(node: FigmaNode, mappedType: VaultNode["type"], bounds: FigmaR
   if (mappedType === "image") {
     return { path: `assets/${safeNodeId(node.id)}.png`, w: rounded(bounds.width), h: rounded(bounds.height) };
   }
-  if (mappedType === "vector" && VECTOR_TYPES.has(node.type)) {
+  if ((mappedType === "vector" && VECTOR_TYPES.has(node.type)) || canGenerateSvgAsset(node)) {
     return { path: `assets/${safeNodeId(node.id)}.svg`, w: rounded(bounds.width), h: rounded(bounds.height) };
   }
   return undefined;
@@ -254,6 +255,7 @@ function normalizeNode(
 }
 
 function visit(node: FigmaNode, callback: (node: FigmaNode) => void): void {
+  if (node.visible === false) return;
   callback(node);
   for (const child of node.children ?? []) visit(child, callback);
 }
@@ -419,9 +421,8 @@ export function collectRenderTargets(root: FigmaNode): RenderTargets {
   const png = new Set<string>();
   const svg = new Set<string>();
   visit(root, (node) => {
-    if (node.visible === false) return;
     if (firstVisiblePaint(node.fills, "IMAGE")) png.add(node.id);
-    else if (VECTOR_TYPES.has(node.type)) svg.add(node.id);
+    else if (needsRemoteSvgRender(node)) svg.add(node.id);
   });
   return { png: [...png], svg: [...svg] };
 }

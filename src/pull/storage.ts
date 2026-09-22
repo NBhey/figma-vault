@@ -4,6 +4,7 @@ import path from "node:path";
 import { countVaultNodes } from "./normalize.js";
 import { makeDocId } from "./url.js";
 import type { FigmaNodesResponse, SnapshotIndex, VaultDocument } from "./types.js";
+import type { GeneratedArtifact } from "./geometry.js";
 
 export interface RemoteArtifact {
   relativePath: string;
@@ -15,6 +16,7 @@ export interface WriteSnapshotInput {
   document: VaultDocument;
   raw: FigmaNodesResponse;
   artifacts: RemoteArtifact[];
+  generatedArtifacts?: GeneratedArtifact[];
   fetcher?: typeof fetch;
 }
 
@@ -48,13 +50,24 @@ async function download(
   if (!response.ok) {
     throw new Error(`Download failed (${response.status}) for ${artifact.relativePath}`);
   }
-  const target = path.resolve(directory, artifact.relativePath);
-  const relative = path.relative(directory, target);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error(`Artifact path escapes snapshot directory: ${artifact.relativePath}`);
-  }
+  const target = artifactTarget(directory, artifact.relativePath);
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, Buffer.from(await response.arrayBuffer()));
+}
+
+function artifactTarget(directory: string, relativePath: string): string {
+  const target = path.resolve(directory, relativePath);
+  const relative = path.relative(directory, target);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    throw new Error(`Artifact path escapes snapshot directory: ${relativePath}`);
+  }
+  return target;
+}
+
+async function writeGenerated(artifact: GeneratedArtifact, directory: string): Promise<void> {
+  const target = artifactTarget(directory, artifact.relativePath);
+  await mkdir(path.dirname(target), { recursive: true });
+  await writeFile(target, artifact.content);
 }
 
 export async function writeSnapshot(input: WriteSnapshotInput): Promise<WriteSnapshotResult> {
@@ -70,11 +83,19 @@ export async function writeSnapshot(input: WriteSnapshotInput): Promise<WriteSna
   ]);
 
   const warnings: string[] = [];
-  let assetCount = 0;
+  const writtenAssets = new Set<string>();
+  for (const artifact of input.generatedArtifacts ?? []) {
+    try {
+      await writeGenerated(artifact, directory);
+      if (artifact.relativePath.startsWith("assets/")) writtenAssets.add(artifact.relativePath);
+    } catch (error) {
+      warnings.push(error instanceof Error ? error.message : String(error));
+    }
+  }
   for (const artifact of input.artifacts) {
     try {
       await download(fetcher, artifact, directory);
-      if (artifact.relativePath.startsWith("assets/")) assetCount += 1;
+      if (artifact.relativePath.startsWith("assets/")) writtenAssets.add(artifact.relativePath);
     } catch (error) {
       warnings.push(error instanceof Error ? error.message : String(error));
     }
@@ -98,6 +119,5 @@ export async function writeSnapshot(input: WriteSnapshotInput): Promise<WriteSna
   await writeFile(temporaryIndex, `${JSON.stringify(index, null, 2)}\n`, "utf8");
   await rename(temporaryIndex, indexPath);
 
-  return { docId, directory, assetCount, warnings };
+  return { docId, directory, assetCount: writtenAssets.size, warnings };
 }
-

@@ -30,3 +30,13 @@ test("FigmaClient reports status without leaking its token", async () => {
   );
 });
 
+test("FigmaClient skips the images endpoint when there are no render targets", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async () => {
+    calls += 1;
+    throw new Error("fetch must not be called");
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  assert.deepEqual(await client.renderNodes("file-key", [], "svg"), {});
+  assert.equal(calls, 0);
+});

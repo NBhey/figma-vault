@@ -44,16 +44,20 @@ test("writeSnapshot creates a self-contained vault entry and index", async () =>
         { relativePath: "screenshot.png", url: "https://assets.test/screenshot" },
         { relativePath: "assets/1_3.svg", url: "https://assets.test/icon" },
       ],
+      generatedArtifacts: [
+        { relativePath: "assets/1_4.svg", content: "<svg/>\n" },
+      ],
       fetcher,
     });
 
     assert.equal(result.docId, "file_1_2");
-    assert.equal(result.assetCount, 1);
+    assert.equal(result.assetCount, 2);
     assert.deepEqual(result.warnings, []);
     const storedDoc = JSON.parse(await readFile(path.join(result.directory, "doc.json"), "utf8"));
     const index = JSON.parse(await readFile(path.join(vaultDir, "index.json"), "utf8"));
     assert.equal(storedDoc.source.nodeId, "1:2");
     assert.equal(index.docs[0].nodeCount, 1);
+    assert.equal(await readFile(path.join(result.directory, "assets/1_4.svg"), "utf8"), "<svg/>\n");
   } finally {
     await rm(vaultDir, { recursive: true, force: true });
   }
@@ -77,3 +81,19 @@ test("writeSnapshot refuses artifact paths outside the snapshot", async () => {
   }
 });
 
+test("writeSnapshot refuses generated artifact paths outside the snapshot", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-test-"));
+  try {
+    const result = await writeSnapshot({
+      vaultDir,
+      document,
+      raw,
+      artifacts: [],
+      generatedArtifacts: [{ relativePath: "../escape.svg", content: "<svg/>" }],
+    });
+    assert.equal(result.assetCount, 0);
+    assert.match(result.warnings[0] ?? "", /escapes snapshot directory/);
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});

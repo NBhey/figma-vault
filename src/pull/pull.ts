@@ -1,6 +1,7 @@
 import path from "node:path";
 
 import { FigmaClient, getRootEntry } from "./client.js";
+import { collectGeneratedSvgArtifacts } from "./geometry.js";
 import { collectRenderTargets, countVaultNodes, normalizeFigmaResponse } from "./normalize.js";
 import { writeSnapshot, type RemoteArtifact, type WriteSnapshotResult } from "./storage.js";
 import { parseFigmaUrl, safeNodeId } from "./url.js";
@@ -23,6 +24,7 @@ export async function pullFigmaSelection(figmaUrl: string, options: PullOptions)
   const rootEntry = getRootEntry(raw, nodeId);
   const document = normalizeFigmaResponse(raw, fileKey, nodeId, options.exportedAt);
   const targets = collectRenderTargets(rootEntry.document);
+  const generatedArtifacts = collectGeneratedSvgArtifacts(rootEntry.document);
 
   const [screenshots, pngAssets, svgAssets] = await Promise.all([
     client.renderNodes(fileKey, [nodeId], "png", 2),
@@ -46,6 +48,7 @@ export async function pullFigmaSelection(figmaUrl: string, options: PullOptions)
     document,
     raw,
     artifacts,
+    generatedArtifacts,
   });
 
   if (!screenshots[nodeId]) result.warnings.push(`Figma did not render screenshot for ${nodeId}`);
@@ -58,4 +61,3 @@ export async function pullFigmaSelection(figmaUrl: string, options: PullOptions)
 
   return { ...result, nodeCount: countVaultNodes(document.root) };
 }
-
