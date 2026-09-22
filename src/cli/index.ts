@@ -4,6 +4,7 @@ import { runAdd } from "./add.js";
 import { runCheck } from "./check.js";
 import { runDemo } from "./demo.js";
 import { runInit, runInitGlobal } from "./init.js";
+import { runLimits } from "./limits.js";
 
 const USAGE = `figma-vault — локальное хранилище макетов Figma для AI-агентов
 
@@ -11,12 +12,14 @@ const USAGE = `figma-vault — локальное хранилище макет�
   figma-vault init --global        то же, но без единого файла в репозитории проекта
   figma-vault add <figma-url>      выгрузить макет в хранилище
   figma-vault demo                 положить демо-макет в хранилище (без токена)
+  figma-vault limits <figma-url>   проверить лимиты Figma до выгрузки (2 запроса)
   figma-vault check                проверить, что вся цепочка работает
   figma-vault list                 что уже выгружено
   figma-vault mcp                  запустить MCP-сервер (вызывает агент, не человек)
 
 Опции:
   --no-assets                      только структура, без картинок (лимит рендера строже)
+  --no-command                     init: не ставить слэш-команду /figma
   --vault <каталог>                по умолчанию .figma-vault
 
 Токен: FIGMA_TOKEN в .env или в переменных окружения.
@@ -30,6 +33,7 @@ interface ParsedArgs {
   vaultDir: string;
   noAssets: boolean;
   globalMode: boolean;
+  noCommand: boolean;
 }
 
 /** Ссылку на макет принимаем и без подкоманды: `figma-vault <figma-url>` == `add <figma-url>`. */
@@ -46,6 +50,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let vaultDir = process.env.FIGMA_VAULT_DIR ?? DEFAULT_VAULT;
   let noAssets = false;
   let globalMode = false;
+  let noCommand = false;
 
   while (args.length > 0) {
     const arg = args.shift() as string;
@@ -53,6 +58,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
       const value = args.shift();
       if (!value) throw new Error("--vault требует путь к каталогу");
       vaultDir = value;
+    } else if (arg === "--no-command") {
+      noCommand = true;
     } else if (arg === "--global") {
       globalMode = true;
     } else if (arg === "--no-assets") {
@@ -66,7 +73,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, positional, vaultDir, noAssets, globalMode };
+  return { command, positional, vaultDir, noAssets, globalMode, noCommand };
 }
 
 async function list(vaultDir: string): Promise<void> {
@@ -100,7 +107,7 @@ async function mcp(vaultDir: string): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const { command, positional, vaultDir, noAssets, globalMode } = parseArgs(process.argv.slice(2));
+  const { command, positional, vaultDir, noAssets, globalMode, noCommand } = parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {
     process.stdout.write(`${USAGE}\n`);
@@ -109,7 +116,7 @@ async function main(): Promise<void> {
 
   switch (command) {
     case "init":
-      await (globalMode ? runInitGlobal(vaultDir) : runInit(process.cwd(), vaultDir));
+      await (globalMode ? runInitGlobal(vaultDir) : runInit(process.cwd(), vaultDir, { noCommand }));
       return;
     case "add":
     case "pull":
@@ -117,6 +124,9 @@ async function main(): Promise<void> {
       return;
     case "demo":
       await runDemo(process.cwd(), vaultDir);
+      return;
+    case "limits":
+      await runLimits(positional[0]);
       return;
     case "check":
       await runCheck(process.cwd(), vaultDir, process.argv[1] as string);

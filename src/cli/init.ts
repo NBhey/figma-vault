@@ -135,7 +135,11 @@ export async function runInitGlobal(vaultDirArg: string): Promise<void> {
   out(`  figma-vault check --vault "${vault}"`);
 }
 
-export async function runInit(cwd: string, vaultDir: string): Promise<void> {
+export interface InitOptions {
+  noCommand?: boolean;
+}
+
+export async function runInit(cwd: string, vaultDir: string, options: InitOptions = {}): Promise<void> {
   const out = (line: string) => process.stdout.write(`${line}\n`);
 
   await mkdir(path.join(cwd, vaultDir), { recursive: true });
@@ -155,10 +159,14 @@ export async function runInit(cwd: string, vaultDir: string): Promise<void> {
     out(".env.example:   уже есть");
   }
 
-  const commandFile = path.join(cwd, ".claude", "commands", "figma.md");
-  await mkdir(path.dirname(commandFile), { recursive: true });
-  await writeFile(commandFile, SLASH_COMMAND(vaultDir), "utf8");
-  out(".claude/commands/figma.md: создан");
+  if (options.noCommand) {
+    out(".claude/commands/figma.md: пропущено (--no-command)");
+  } else {
+    const commandFile = path.join(cwd, ".claude", "commands", "figma.md");
+    await mkdir(path.dirname(commandFile), { recursive: true });
+    await writeFile(commandFile, SLASH_COMMAND(vaultDir), "utf8");
+    out(".claude/commands/figma.md: создан");
+  }
 
   out("");
   out("Дальше:");
