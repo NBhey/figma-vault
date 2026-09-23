@@ -15,11 +15,18 @@ export function snapshotScript(rootNodeId: string): string {
   const base = scope.getBoundingClientRect();
   const round = (n) => Math.round(n * 100) / 100;
 
+  // opacity не наследуется: у текста под прозрачным родителем своя opacity равна 1,
+  // поэтому смотрим всю цепочку предков. У display: contents рамки нет, но содержимое видно.
   const isShown = (el) => {
-    const s = getComputedStyle(el);
-    if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0) return false;
-    const r = el.getBoundingClientRect();
-    return r.width > 0 && r.height > 0;
+    if (getComputedStyle(el).display !== "contents") {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 || r.height === 0) return false;
+    }
+    for (let e = el; e; e = e.parentElement) {
+      const s = getComputedStyle(e);
+      if (s.display === "none" || s.visibility === "hidden" || Number(s.opacity) === 0) return false;
+    }
+    return true;
   };
   const blockOf = (el) => {
     while (el !== scope && el.parentElement && getComputedStyle(el).display === "inline") el = el.parentElement;
