@@ -1363,3 +1363,20 @@ npm — строго раньше реестра.
 Порядок на будущее: npm → `mcp-publisher publish` (реестр ищет `mcpName` в уже доступном пакете;
 сразу после `npm publish` версия несколько минут в статусе staged). Вход `mcp-publisher login github`
 делает человек: это публикация от его имени.
+
+---
+
+## claude — 2026-09-23T18:43Z
+
+**T27: сигналы для Glama** (Discovery score 75%: не было glama.json, CI и GitHub Release).
+
+- `glama.json` в корне: `maintainers: ["NBhey"]` по схеме glama.ai/mcp/schemas/server.json.
+- `.github/workflows/ci.yml`: push в master и PR; ubuntu и windows × Node 22 и 24;
+  `npm ci` (он же сборка через `prepare`) → `typecheck` → `npm test` → дымовой прогон
+  `init/demo/check` во временном каталоге без токена. Локально шаги прошли (Windows, 58/58);
+  Linux увижу только на первом прогоне Actions. Привязок к Windows в тестах не нашёл: `init --global`
+  пишет во временный каталог.
+- Значок CI в обоих README рядом с npm.
+
+npm-архив не меняется: `files` в package.json — белый список, `.github` и `glama.json` в него не входят.
+GitHub Release из тега `v0.1.3` создаёт человек в браузере (`gh` на машине нет), текст ему дан.

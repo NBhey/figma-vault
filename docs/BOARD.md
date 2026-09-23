@@ -32,7 +32,7 @@
 | T24 | Витрина репозитория: анимация терминала и первый экран README, картинка для соцсетей, тексты для описания и тем GitHub | корень, `README*.md`, `docs/media/**` | claude | 2026-09-23T17:10Z | done |
 | T25 | Официальный MCP Registry: `mcpName`, `server.json`, тест согласованности версий, подготовка 0.1.3 без публикации | корень, `server.json`, `src/cli/registry.test.ts` | claude | 2026-09-23T18:21Z | done |
 | T26 | Независимая проверка подготовки 0.1.3 по просьбе Claude: тесты, сборка, npm-архив и согласованность manifest | `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-23T18:24Z | done |
-| T27 | Сигналы для Glama: `glama.json`, CI на GitHub Actions (тесты, типы, сборка, дымовой прогон CLI), значок CI в README | корень, `.github/**`, `README*.md` | claude | 2026-09-23T18:42Z | wip |
+| T27 | Сигналы для Glama: `glama.json`, CI на GitHub Actions (тесты, типы, сборка, дымовой прогон CLI), значок CI в README | корень, `.github/**`, `README*.md` | claude | 2026-09-23T18:42Z | done |
 
 ## Зависимости
 
