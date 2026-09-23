@@ -38,7 +38,7 @@ function isEnoent(error: unknown): boolean {
 
 function assertDocId(docId: string): void {
   if (!DOC_ID_RE.test(docId)) {
-    throw new VaultError(`Некорректный docId: ${JSON.stringify(docId)}`);
+    throw new VaultError(`Invalid docId: ${JSON.stringify(docId)}`);
   }
 }
 
@@ -156,7 +156,7 @@ export class Vault {
     try {
       parsed = JSON.parse(text) as unknown;
     } catch {
-      throw new VaultError(`Файл повреждён и не разбирается как JSON: ${file}`);
+      throw new VaultError(`File is damaged and does not parse as JSON: ${file}`);
     }
     try {
       return check(parsed, file);
@@ -169,7 +169,7 @@ export class Vault {
   async list(): Promise<VaultIndex> {
     return (await this.readJson(
       path.join(this.root, "index.json"),
-      `В ${this.root} нет index.json — vault пуст. Сначала выгрузите макет: npx figma-vault add "<ссылка на фрейм>"`,
+      `No index.json in ${this.root} — the vault is empty. Export a design first: npx figma-vault add "<link to a frame>"`,
       validateVaultIndex,
     )) as VaultIndex;
   }
@@ -177,7 +177,7 @@ export class Vault {
   async getRawDoc(docId: string): Promise<VaultDocument> {
     return (await this.readJson(
       path.join(this.docDir(docId), "doc.json"),
-      `Документ ${docId} не найден. Список доступных — vault_list.`,
+      `Document ${docId} not found. Call vault_list for the available ones.`,
       validateVaultDocument,
     )) as VaultDocument;
   }
@@ -186,7 +186,7 @@ export class Vault {
   async getDoc(docId: string, maxDepth?: number, includeHidden = false): Promise<TruncatedDocument> {
     const doc = await this.getRawDoc(docId);
     if (maxDepth !== undefined && (!Number.isInteger(maxDepth) || maxDepth < 0)) {
-      throw new VaultError(`maxDepth должен быть целым числом >= 0, получено: ${maxDepth}`);
+      throw new VaultError(`maxDepth must be an integer >= 0, got: ${maxDepth}`);
     }
     let root = doc.root;
     let hiddenNodes = 0;
@@ -209,7 +209,7 @@ export class Vault {
     const doc = await this.getRawDoc(docId);
     const node = findNode(doc.root, nodeId);
     if (!node) {
-      throw new VaultError(`Узел ${nodeId} не найден в ${docId}. Поиск по имени — vault_search.`);
+      throw new VaultError(`Node ${nodeId} not found in ${docId}. Search by name with vault_search.`);
     }
     return includeHidden ? node : withoutHidden(node, { count: 0 });
   }
@@ -220,7 +220,7 @@ export class Vault {
 
   async search(docId: string, query: string, limit = 50, includeHidden = false): Promise<SearchResult> {
     const needle = query.trim().toLowerCase();
-    if (needle.length === 0) throw new VaultError("Пустой query: нечего искать.");
+    if (needle.length === 0) throw new VaultError("Empty query: nothing to search for.");
     const doc = await this.getRawDoc(docId);
     const hits: SearchHit[] = [];
     collectHits(doc.root, needle, [], hits, includeHidden);
@@ -238,12 +238,12 @@ export class Vault {
     const target = path.resolve(dir, assetPath);
     const relative = path.relative(dir, target);
     if (relative.startsWith("..") || path.isAbsolute(relative)) {
-      throw new VaultError(`Путь выходит за пределы документа: ${assetPath}`);
+      throw new VaultError(`Path leaves the document directory: ${assetPath}`);
     }
     const mimeType = ASSET_MIME[path.extname(target).toLowerCase()];
     if (!mimeType) {
       throw new VaultError(
-        `Не ресурс изображения: ${assetPath}. Доступны ${Object.keys(ASSET_MIME).join(", ")}.`,
+        `Not an image asset: ${assetPath}. Supported extensions: ${Object.keys(ASSET_MIME).join(", ")}.`,
       );
     }
     let buffer: Buffer;
@@ -251,7 +251,7 @@ export class Vault {
       buffer = await readFile(target);
     } catch (error) {
       if (isEnoent(error)) {
-        throw new VaultError(`Ресурс ${assetPath} не найден в ${docId}.`);
+        throw new VaultError(`Asset ${assetPath} not found in ${docId}.`);
       }
       throw error;
     }

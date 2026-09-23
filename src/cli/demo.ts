@@ -32,8 +32,8 @@ export async function runDemo(cwd: string, vaultDir: string): Promise<void> {
   const sourceIndex = await readJson<IndexFile>(path.join(source, "index.json"));
   if (!sourceIndex || sourceIndex.docs.length === 0) {
     throw new Error(
-      `Демо-макет не найден рядом с пакетом (${source}).\n` +
-        "Если пакет ставили из npm — возможно, каталог vault/example не попал в сборку.",
+      `The demo design is not next to the package (${source}).\n` +
+        "If the package came from npm, the vault/example directory may be missing from the build.",
     );
   }
 
@@ -42,7 +42,7 @@ export async function runDemo(cwd: string, vaultDir: string): Promise<void> {
 
   for (const doc of sourceIndex.docs) {
     await cp(path.join(source, doc.docId), path.join(target, doc.docId), { recursive: true });
-    out(`Скопирован макет: ${doc.docId}`);
+    out(`Design copied: ${doc.docId}`);
   }
 
   // Индекс сливаем, чтобы не затереть уже выгруженные макеты.
@@ -59,6 +59,6 @@ export async function runDemo(cwd: string, vaultDir: string): Promise<void> {
   );
 
   out("");
-  out(`Демо-макет лежит в ${vaultDir}/ — токен Figma для него не нужен.`);
-  out("Проверьте цепочку целиком:  npx figma-vault check");
+  out(`The demo design is in ${vaultDir}/ — no Figma token needed for it.`);
+  out("Check the whole chain:  npx figma-vault check");
 }

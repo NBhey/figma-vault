@@ -91,9 +91,9 @@ figma-vault limits "<ссылка на фрейм>"
 Два запроса — те же, что сделала бы выгрузка — и ответ, пройдёт ли она:
 
 ```
-[ OK ]  Чтение структуры  /v1/files/:key/nodes — HTTP 200
-[ЛИМИТ] Рендер картинок   /v1/images/:key — HTTP 429
-        освободится примерно через 5 сут
+[ OK ] Reading structure  /v1/files/:key/nodes — HTTP 200
+[LIMIT] Rendering images   /v1/images/:key — HTTP 429
+        frees up in about 5 d
 ```
 
 Полная выгрузка одного экрана стоит **три запроса**, измерено на реальном макете
@@ -149,13 +149,14 @@ figma-vault init && figma-vault demo && figma-vault check
 ```
 
 ```
-[ OK ] .mcp.json — сервер figma-vault зарегистрирован
-[ OK ] Хранилище — .figma-vault/, макетов: 1
-[ OK ] Макет EXAMPLE1234_1_1 — узлов: 29
-[ OK ] MCP-сервер — инструментов: 6 (vault_list, vault_get_doc, …)
-[ВНИМ] FIGMA_TOKEN — не задан — читать макеты можно, выгружать новые нельзя
+[ OK ] .mcp.json — the figma-vault server is registered
+[ OK ] Vault — .figma-vault/, designs: 1
+[ OK ] Design EXAMPLE1234_1_1 — nodes: 29
+[ OK ] MCP server — tools: 6 (vault_list, vault_get_doc, …)
+[WARN] FIGMA_TOKEN — not set — reading designs from the vault works, exporting new ones does not
 ```
 
+Вывод команд и сообщения MCP-сервера английские по умолчанию; этот README — перевод документации.
 `check` поднимает настоящий MCP-сервер дочерним процессом и здоровается с ним по протоколу.
 Код возврата 1 при реальных проблемах — годится для CI.
 

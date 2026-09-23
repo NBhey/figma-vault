@@ -25,17 +25,17 @@ async function guard(run: () => Promise<CallToolResult>): Promise<CallToolResult
     return await run();
   } catch (error) {
     if (error instanceof VaultError) return failure(error);
-    return failure(error instanceof Error ? `Внутренняя ошибка: ${error.message}` : error);
+    return failure(error instanceof Error ? `Internal error: ${error.message}` : error);
   }
 }
 
-const docIdArg = z.string().min(1).describe("Идентификатор документа из vault_list");
+const docIdArg = z.string().min(1).describe("Document id as returned by vault_list");
 const includeHiddenArg = z
   .boolean()
   .optional()
   .describe(
-    "Отдавать и скрытые в Figma узлы (hidden: true) — опциональные слоты компонентов. " +
-      "По умолчанию false: для вёрстки экрана как есть они не нужны.",
+    "Also return nodes hidden in Figma (hidden: true) — optional component slots. " +
+      "Defaults to false: building the screen as it looks does not need them.",
   );
 
 export function createServer(vault: Vault): McpServer {
@@ -43,24 +43,24 @@ export function createServer(vault: Vault): McpServer {
     { name: SERVER_NAME, version: SERVER_VERSION },
     {
       instructions:
-        "Локальное хранилище макетов Figma. Начинайте с vault_list, затем vault_get_doc " +
-        "с небольшим maxDepth, чтобы увидеть структуру, и углубляйтесь через vault_get_node. " +
-        "Координаты x/y относительны родителю; при layout.mode=row|column это auto-layout " +
-        "(flex), при mode=none — абсолютное позиционирование по x/y/w/h. " +
-        "ВАЖНО: порядок children — это порядок отрисовки Figma, а не визуальный. " +
-        "Визуальный порядок сверху вниз даёт сортировка по layout.y, иначе секции " +
-        "страницы соберутся вперемешку. " +
-        "Скрытые в Figma узлы по умолчанию не отдаются; hiddenOmitted у узла говорит, " +
-        "сколько скрытых детей у него есть. Они нужны, когда верстается переиспользуемый " +
-        "компонент со слотами: тогда includeHidden: true.",
+        "Local storage of Figma designs. Start with vault_list, then vault_get_doc " +
+        "with a small maxDepth to see the structure, and go deeper with vault_get_node. " +
+        "The x/y coordinates are relative to the parent; layout.mode=row|column means " +
+        "auto-layout (flex), mode=none means absolute positioning by x/y/w/h. " +
+        "IMPORTANT: the order of children is Figma's paint order, not the visual one. " +
+        "Sorting by layout.y gives the visual top-to-bottom order; without it the page " +
+        "sections come out shuffled. " +
+        "Nodes hidden in Figma are not returned by default; hiddenOmitted on a node tells " +
+        "how many hidden children it has. They are needed when building a reusable component " +
+        "with slots: pass includeHidden: true then.",
     },
   );
 
   server.registerTool(
     "vault_list",
     {
-      title: "Список макетов",
-      description: "Все выгруженные документы: docId, имя файла и узла, время выгрузки, число узлов.",
+      title: "List designs",
+      description: "Every exported document: docId, file and node name, export time, node count.",
       inputSchema: {},
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -70,11 +70,11 @@ export function createServer(vault: Vault): McpServer {
   server.registerTool(
     "vault_get_doc",
     {
-      title: "Документ целиком",
+      title: "Whole document",
       description:
-        "Нормализованное дерево макета вместе с токенами. maxDepth обрезает дерево по глубине " +
-        "(0 — только корень); у обрезанных узлов появляется childrenOmitted. " +
-        "Скрытые узлы не отдаются без includeHidden.",
+        "Normalized design tree together with its tokens. maxDepth cuts the tree by depth " +
+        "(0 — the root only); truncated nodes get childrenOmitted. " +
+        "Hidden nodes are not returned without includeHidden.",
       inputSchema: {
         docId: docIdArg,
         maxDepth: z
@@ -82,7 +82,7 @@ export function createServer(vault: Vault): McpServer {
           .int()
           .min(0)
           .optional()
-          .describe("Сколько уровней ниже корня отдавать. Без параметра — всё дерево."),
+          .describe("How many levels below the root to return. Omit for the whole tree."),
         includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
@@ -94,11 +94,11 @@ export function createServer(vault: Vault): McpServer {
   server.registerTool(
     "vault_get_node",
     {
-      title: "Поддерево узла",
-      description: "Узел по id со всеми потомками. Нужен, чтобы не тянуть весь документ.",
+      title: "Node subtree",
+      description: "A node by id with all of its descendants. Use it instead of pulling the whole document.",
       inputSchema: {
         docId: docIdArg,
-        nodeId: z.string().min(1).describe("id узла в формате Figma, например 1:42"),
+        nodeId: z.string().min(1).describe("Node id in Figma format, for example 1:42"),
         includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
@@ -110,14 +110,14 @@ export function createServer(vault: Vault): McpServer {
   server.registerTool(
     "vault_search",
     {
-      title: "Поиск по макету",
+      title: "Search the design",
       description:
-        "Узлы, у которых имя или текстовое содержимое содержит подстроку (без учёта регистра). " +
-        "Возвращает id, тип и путь от корня.",
+        "Nodes whose name or text content contains the substring (case-insensitive). " +
+        "Returns id, type and the path from the root.",
       inputSchema: {
         docId: docIdArg,
-        query: z.string().min(1).describe("Подстрока для поиска в name и text.content"),
-        limit: z.number().int().min(1).max(500).optional().describe("Максимум совпадений, по умолчанию 50"),
+        query: z.string().min(1).describe("Substring to look for in name and text.content"),
+        limit: z.number().int().min(1).max(500).optional().describe("Maximum number of hits, 50 by default"),
         includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
@@ -129,8 +129,8 @@ export function createServer(vault: Vault): McpServer {
   server.registerTool(
     "vault_get_tokens",
     {
-      title: "Токены дизайн-системы",
-      description: "Цвета, текстовые стили и эффекты документа. Узлы ссылаются на них через text.token.",
+      title: "Design system tokens",
+      description: "Colors, text styles and effects of the document. Nodes refer to them via text.token.",
       inputSchema: { docId: docIdArg },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
@@ -140,13 +140,13 @@ export function createServer(vault: Vault): McpServer {
   server.registerTool(
     "vault_get_asset",
     {
-      title: "Ресурс макета",
+      title: "Design asset",
       description:
-        "Картинка из документа по пути из node.asset.path (например assets/logo.svg) " +
-        "или screenshot.png. Растр отдаётся картинкой, svg — исходником.",
+        "An image from the document by the path from node.asset.path (for example assets/logo.svg) " +
+        "or screenshot.png. Raster comes back as an image, svg as its source.",
       inputSchema: {
         docId: docIdArg,
-        path: z.string().min(1).describe("Путь внутри каталога документа, например assets/hero.png"),
+        path: z.string().min(1).describe("Path inside the document directory, for example assets/hero.png"),
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },

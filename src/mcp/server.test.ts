@@ -48,6 +48,31 @@ test("сервер объявляет ровно шесть инструмент
   await client.close();
 });
 
+test("метаданные для агента английские: инструкции, заголовки, описания и аргументы", async () => {
+  const client = await connect();
+
+  const instructions = client.getInstructions() ?? "";
+  assert.ok(instructions.length > 0, "сервер обязан объяснить агенту, с чего начинать");
+  assert.doesNotMatch(instructions, /[А-Яа-я]/, instructions);
+  assert.match(instructions, /Start with vault_list/);
+
+  const { tools } = await client.listTools();
+  for (const tool of tools) {
+    // Всё, что MCP-клиент показывает агенту или человеку: title, description и описания аргументов.
+    const shown = [tool.title, tool.annotations?.title, tool.description, JSON.stringify(tool.inputSchema)]
+      .filter(Boolean)
+      .join("\n");
+    assert.doesNotMatch(shown, /[А-Яа-я]/, `${tool.name}: ${shown}`);
+  }
+
+  const doc = tools.find((tool) => tool.name === "vault_get_doc");
+  const properties = (doc?.inputSchema.properties ?? {}) as Record<string, { description?: string }>;
+  assert.match(properties.docId?.description ?? "", /Document id/);
+  assert.match(properties.includeHidden?.description ?? "", /hidden in Figma/);
+
+  await client.close();
+});
+
 test("инструменты отвечают через протокол", async () => {
   const client = await connect();
 

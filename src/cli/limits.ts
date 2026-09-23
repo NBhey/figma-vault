@@ -14,10 +14,10 @@ import { parseFigmaUrl } from "../pull/url.js";
 const BASE = "https://api.figma.com/v1";
 
 function humanDuration(seconds: number): string {
-  if (seconds < 90) return `${Math.round(seconds)} с`;
-  if (seconds < 5400) return `${Math.round(seconds / 60)} мин`;
-  if (seconds < 172_800) return `${Math.round(seconds / 3600)} ч`;
-  return `${Math.round(seconds / 86_400)} сут`;
+  if (seconds < 90) return `${Math.round(seconds)} s`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min`;
+  if (seconds < 172_800) return `${Math.round(seconds / 3600)} h`;
+  return `${Math.round(seconds / 86_400)} d`;
 }
 
 interface Probe {
@@ -71,36 +71,36 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
 export async function runLimits(figmaUrl: string | undefined): Promise<void> {
   if (!figmaUrl) {
     throw new Error(
-      'Нужна ссылка на фрейм: figma-vault limits "https://figma.com/design/...?node-id=1-42"\n' +
-        "Проверка делает два запроса — те же, что и выгрузка.",
+      'A link to a frame is required: figma-vault limits "https://figma.com/design/...?node-id=1-42"\n' +
+        "The check makes two requests — the same ones the export would make.",
     );
   }
   const token = process.env.FIGMA_TOKEN;
-  if (!token) throw new Error("Не задан FIGMA_TOKEN.");
+  if (!token) throw new Error("FIGMA_TOKEN is not set.");
 
   const { fileKey, nodeId } = parseFigmaUrl(figmaUrl);
   const out = (line: string) => process.stdout.write(`${line}\n`);
 
   const structure = await probe(
-    "Чтение структуры  /v1/files/:key/nodes",
+    "Reading structure  /v1/files/:key/nodes",
     `${BASE}/files/${encodeURIComponent(fileKey)}/nodes?ids=${encodeURIComponent(nodeId)}&depth=1`,
     token,
   );
   const render = await probe(
-    "Рендер картинок   /v1/images/:key",
+    "Rendering images   /v1/images/:key",
     `${BASE}/images/${encodeURIComponent(fileKey)}?ids=${encodeURIComponent(nodeId)}&format=png`,
     token,
   );
 
   out("");
   for (const p of [structure, render]) {
-    const mark = p.ok ? " OK " : p.status === 429 ? "ЛИМИТ" : "СБОЙ";
-    out(`[${mark}] ${p.label} — HTTP ${p.status || "нет ответа"}`);
+    const mark = p.ok ? " OK " : p.status === 429 ? "LIMIT" : "FAIL";
+    out(`[${mark}] ${p.label} — HTTP ${p.status || "no answer"}`);
     if (p.retryAfter && p.retryAfter > 0) {
-      out(`         освободится примерно через ${humanDuration(p.retryAfter)}`);
+      out(`         frees up in about ${humanDuration(p.retryAfter)}`);
     }
     if (p.plan || p.kind) {
-      const bits = [p.plan ? `тариф ${p.plan}` : null, p.kind ? `тип лимита ${p.kind}` : null]
+      const bits = [p.plan ? `plan ${p.plan}` : null, p.kind ? `limit type ${p.kind}` : null]
         .filter(Boolean)
         .join(", ");
       out(`         ${bits}`);
@@ -110,22 +110,22 @@ export async function runLimits(figmaUrl: string | undefined): Promise<void> {
 
   out("");
   if (structure.ok && render.ok) {
-    out("Выгрузка пройдёт полностью: структура, скриншот и картинки.");
-    out("Иконки собираются локально из геометрии и лимит не расходуют.");
+    out("The export will go through completely: structure, screenshot and images.");
+    out("Icons are built locally from geometry and do not spend the limit.");
   } else if (structure.ok && !render.ok) {
-    out("Структура доступна, рендер картинок — нет.");
-    out("Выгружайте с флагом --no-assets: будет дерево, тексты, отступы и цвета,");
-    out("без скриншота и растровых картинок. Их доберёте позже тем же add без флага.");
+    out("The structure is available, image rendering is not.");
+    out("Export with the --no-assets flag: you get the tree, texts, spacing and colors,");
+    out("without the screenshot and raster images. Fetch them later with the same add without the flag.");
     process.exitCode = 1;
   } else if (structure.status === 403) {
-    out("Нет доступа к файлу. Проверьте, что у токена scope File content (read-only)");
-    out("и что аккаунт, которому принадлежит токен, имеет доступ к этому файлу в Figma.");
+    out("No access to the file. Check that the token has the File content (read-only) scope");
+    out("and that the account owning the token has access to this file in Figma.");
     process.exitCode = 1;
   } else if (structure.status === 404) {
-    out("Файл или узел не найден. Проверьте ссылку: в ней должен быть node-id.");
+    out("File or node not found. Check the link: it must contain node-id.");
     process.exitCode = 1;
   } else {
-    out("Выгрузка сейчас не пройдёт. Смотрите статусы выше.");
+    out("The export will not go through right now. See the statuses above.");
     process.exitCode = 1;
   }
 }

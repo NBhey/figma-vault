@@ -7,29 +7,29 @@ import { runInit, runInitGlobal } from "./init.js";
 import { runLimits } from "./limits.js";
 import { runVerify } from "./verify.js";
 
-const USAGE = `figma-vault — локальное хранилище макетов Figma для AI-агентов
+const USAGE = `figma-vault — local storage of Figma designs for AI agents
 
-  figma-vault init                 подключить хранилище к текущему проекту
-  figma-vault init --global        то же, но без единого файла в репозитории проекта
-  figma-vault add <figma-url>      выгрузить макет в хранилище
-  figma-vault demo                 положить демо-макет в хранилище (без токена)
-  figma-vault limits <figma-url>   проверить лимиты Figma до выгрузки (2 запроса)
-  figma-vault check                проверить, что вся цепочка работает
-  figma-vault list                 что уже выгружено
+  figma-vault init                 connect the vault to the current project
+  figma-vault init --global        the same, but without a single file in the project repo
+  figma-vault add <figma-url>      export a design into the vault
+  figma-vault demo                 put the demo design into the vault (no token needed)
+  figma-vault limits <figma-url>   check Figma rate limits before exporting (2 requests)
+  figma-vault check                check that the whole chain works
+  figma-vault list                 what is already exported
   figma-vault verify [docId] --snippet
-                                   скрипт для браузера: снимает снимок свёрстанной страницы
-  figma-vault verify [docId] --snapshot <файл>
-                                   сверить снимок с макетом: тексты и размеченные блоки
-  figma-vault mcp                  запустить MCP-сервер (вызывает агент, не человек)
+                                   browser script: takes a snapshot of the built page
+  figma-vault verify [docId] --snapshot <file>
+                                   compare the snapshot with the design: texts and marked blocks
+  figma-vault mcp                  start the MCP server (called by an agent, not by a human)
 
-Опции:
-  --no-assets                      только структура, без картинок (лимит рендера строже)
-  --no-command                     init: не ставить слэш-команду /figma
-  --vault <каталог>                по умолчанию .figma-vault
-  --tolerance <px>                 verify: допуск по геометрии, по умолчанию 2
+Options:
+  --no-assets                      structure only, no images (the render limit is stricter)
+  --no-command                     init: do not install the /figma slash command
+  --vault <directory>              .figma-vault by default
+  --tolerance <px>                 verify: geometry tolerance, 2 by default
 
-Токен: FIGMA_TOKEN в .env или в переменных окружения.
-Нужен только тому, кто выгружает макет; остальным — нет.`;
+Token: FIGMA_TOKEN in .env or in the environment.
+Only whoever exports a design needs it; everyone else does not.`;
 
 const DEFAULT_VAULT = ".figma-vault";
 
@@ -68,16 +68,16 @@ export function parseArgs(argv: string[]): ParsedArgs {
     const arg = args.shift() as string;
     if (arg === "--vault") {
       const value = args.shift();
-      if (!value) throw new Error("--vault требует путь к каталогу");
+      if (!value) throw new Error("--vault needs a directory path");
       vaultDir = value;
     } else if (arg === "--snippet") {
       snippet = true;
     } else if (arg === "--snapshot") {
       snapshotFile = args.shift();
-      if (!snapshotFile) throw new Error("--snapshot требует путь к файлу снимка");
+      if (!snapshotFile) throw new Error("--snapshot needs a path to the snapshot file");
     } else if (arg === "--tolerance") {
       tolerance = Number(args.shift());
-      if (!Number.isFinite(tolerance) || tolerance < 0) throw new Error("--tolerance требует число пикселей >= 0");
+      if (!Number.isFinite(tolerance) || tolerance < 0) throw new Error("--tolerance needs a number of pixels >= 0");
     } else if (arg === "--no-command") {
       noCommand = true;
     } else if (arg === "--global") {
@@ -87,7 +87,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     } else if (arg === "--help" || arg === "-h") {
       positional.push("--help");
     } else if (arg.startsWith("--")) {
-      throw new Error(`Неизвестная опция: ${arg}`);
+      throw new Error(`Unknown option: ${arg}`);
     } else {
       positional.push(arg);
     }
@@ -102,15 +102,15 @@ async function list(vaultDir: string): Promise<void> {
   const index = await vault.list().catch(() => ({ docs: [] }));
   if (index.docs.length === 0) {
     process.stdout.write(
-      `Хранилище ${vaultDir} пусто.\nВыгрузите макет: figma-vault add "<ссылка на фрейм>"\n`,
+      `Vault ${vaultDir} is empty.\nExport a design: figma-vault add "<link to a frame>"\n`,
     );
     return;
   }
-  process.stdout.write(`Хранилище ${vaultDir}, макетов: ${index.docs.length}\n\n`);
+  process.stdout.write(`Vault ${vaultDir}, designs: ${index.docs.length}\n\n`);
   for (const doc of index.docs) {
     process.stdout.write(`  ${doc.docId}\n`);
     process.stdout.write(`    ${doc.fileName} → ${doc.nodeName}\n`);
-    process.stdout.write(`    узлов: ${doc.nodeCount}, выгружен: ${doc.exportedAt}\n\n`);
+    process.stdout.write(`    nodes: ${doc.nodeCount}, exported: ${doc.exportedAt}\n\n`);
   }
 }
 
@@ -123,7 +123,7 @@ async function mcp(vaultDir: string): Promise<void> {
   ]);
   const server = createServer(new Vault(vaultDir));
   await server.connect(new StdioServerTransport());
-  process.stderr.write(`[figma-vault] MCP на stdio, хранилище: ${vaultDir}\n`);
+  process.stderr.write(`[figma-vault] MCP on stdio, vault: ${vaultDir}\n`);
 }
 
 /**
@@ -176,7 +176,7 @@ async function main(): Promise<void> {
       await mcp(vaultDir);
       return;
     default:
-      throw new Error(`Неизвестная команда: ${command}\n\n${USAGE}`);
+      throw new Error(`Unknown command: ${command}\n\n${USAGE}`);
   }
 }
 

@@ -202,9 +202,40 @@ test("пустой vault объясняет, что делать дальше", 
   const empty = new Vault(path.join(repoRoot, "vault", "example", "EXAMPLE1234_1_1", "assets"));
   await assert.rejects(() => empty.list(), (error: Error) => {
     assert.ok(error instanceof VaultError);
+    assert.match(error.message, /the vault is empty/);
     assert.match(error.message, /figma-vault add/);
     return true;
   });
+});
+
+test("ошибки, которые видит агент, английские и подсказывают следующий шаг", async () => {
+  const messages = await Promise.all(
+    [
+      () => vault.getDoc("нет-такого-дока"),
+      () => vault.getDoc(DOC, -1),
+      () => vault.getNode(DOC, "9:99"),
+      () => vault.search(DOC, "   "),
+      () => vault.getAsset(DOC, "../../package.json"),
+      () => vault.getAsset(DOC, "doc.json"),
+      () => vault.getAsset(DOC, "assets/нет.png"),
+    ].map(async (call) => {
+      try {
+        await call();
+      } catch (error) {
+        if (error instanceof VaultError) return error.message;
+        throw error;
+      }
+      throw new Error("ожидалась ошибка, а вызов прошёл");
+    }),
+  );
+
+  // Кириллица в сообщении допустима только там, где это эхо аргумента самого агента.
+  for (const message of messages) {
+    assert.doesNotMatch(message.replace(/нет-такого-дока|нет\.png/g, ""), /[А-Яа-я]/, message);
+  }
+  assert.match(messages[2] as string, /Node 9:99 not found in .*vault_search/);
+  assert.match(messages[3] as string, /^Empty query/);
+  assert.match(messages[5] as string, /Not an image asset/);
 });
 
 test("каталог vault берётся из флага, переменной окружения и умолчания", () => {

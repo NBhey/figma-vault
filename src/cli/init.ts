@@ -40,12 +40,12 @@ async function writeMcpConfig(cwd: string, vaultDir: string): Promise<string> {
   };
 
   const before = JSON.stringify(servers[MCP_SERVER_NAME]);
-  if (before === JSON.stringify(entry)) return "запись уже настроена";
+  if (before === JSON.stringify(entry)) return "entry already configured";
 
   servers[MCP_SERVER_NAME] = entry;
   const next: McpConfig = { ...existing, mcpServers: servers };
   await writeFile(file, `${JSON.stringify(next, null, 2)}\n`, "utf8");
-  return before === undefined ? "запись добавлена" : "запись обновлена";
+  return before === undefined ? "entry added" : "entry updated";
 }
 
 /** Дописывает строки в .gitignore, если их там ещё нет. */
@@ -61,54 +61,55 @@ async function ensureGitignore(cwd: string, lines: string[]): Promise<string[]> 
 }
 
 const SLASH_COMMAND = (vaultDir: string) => `---
-description: Выгрузить макет Figma и сверстать его
-argument-hint: <ссылка на фрейм Figma>
+description: Export a Figma design and build it
+argument-hint: <link to a Figma frame>
 allowed-tools: Bash(npx figma-vault:*), Read, Write, Edit, Glob, Grep
 ---
 
-Свёрстай интерфейс по макету Figma: $ARGUMENTS
+Build the interface from this Figma design: $ARGUMENTS
 
-Порядок работы:
+How to work:
 
-1. Выгрузи макет в локальное хранилище одной командой:
+1. Export the design into the local vault with one command:
    \`npx figma-vault add "$ARGUMENTS" --vault ${vaultDir}\`
-   Если команда сообщает, что нет FIGMA_TOKEN — скажи об этом и остановись.
+   If the command reports that FIGMA_TOKEN is missing — say so and stop.
 
-2. Прочитай макет через MCP-сервер \`figma-vault\`, а НЕ через Figma:
-   - \`vault_list\` — найди docId только что выгруженного макета;
-   - \`vault_get_doc\` с небольшим maxDepth — пойми структуру;
-   - \`vault_get_node\` — углубляйся в нужные секции;
-   - \`vault_get_tokens\` — цвета и типографика, если они есть.
+2. Read the design through the \`figma-vault\` MCP server, NOT through Figma:
+   - \`vault_list\` — find the docId of the design you have just exported;
+   - \`vault_get_doc\` with a small maxDepth — understand the structure;
+   - \`vault_get_node\` — go deeper into the sections you need;
+   - \`vault_get_tokens\` — colors and typography, if there are any.
 
-3. Важные особенности данных:
-   - порядок \`children\` — это z-order Figma, а не визуальный. Реальный порядок
-     секций сверху вниз даёт сортировка по \`layout.y\`;
-   - \`layout.mode: row|column\` — это auto-layout, верстай флексом с указанными
-     \`gap\` и \`padding\`. При \`mode: none\` используй \`x/y/w/h\` относительно родителя;
-   - ассеты из \`node.asset.path\` лежат в каталоге макета в хранилище, бери их оттуда;
-   - в \`tokens\` могут быть имена с префиксом \`inferred/\` — это не общие стили из Figma,
-     а повторяющиеся значения, выведенные при выгрузке. Опирайся на них как на палитру:
-     заводи переменные вместо того, чтобы хардкодить цвет в каждом правиле, но давай им
-     осмысленные имена по смыслу использования, а не \`inferred/color/11d452\`;
-   - \`text.runs\` — куски текста со своим цветом или жирностью внутри одного узла;
-   - скрытые в Figma узлы по умолчанию не отдаются, \`hiddenOmitted\` у узла говорит,
-     сколько их. Если верстаешь переиспользуемый компонент со слотами — запроси их
-     с \`includeHidden: true\`.
+3. Important traits of the data:
+   - the order of \`children\` is Figma's z-order, not the visual one. The real
+     top-to-bottom order of sections comes from sorting by \`layout.y\`;
+   - \`layout.mode: row|column\` means auto-layout — build it with flex using the given
+     \`gap\` and \`padding\`. With \`mode: none\` use \`x/y/w/h\` relative to the parent;
+   - assets from \`node.asset.path\` lie in the design directory inside the vault, take them from there;
+   - \`tokens\` may hold names prefixed with \`inferred/\` — those are not shared styles from Figma
+     but repeated values derived during the export. Lean on them as a palette: declare variables
+     instead of hardcoding a color in every rule, but give them meaningful names after how they
+     are used, not \`inferred/color/11d452\`;
+   - \`text.runs\` are pieces of text with their own color or weight inside a single node;
+   - nodes hidden in Figma are not returned by default, \`hiddenOmitted\` on a node tells how many
+     there are. If you are building a reusable component with slots — request them
+     with \`includeHidden: true\`.
 
-4.Свёрстай, следуя конвенциям этого проекта: посмотри на соседние компоненты и
-   повтори их стиль, именование и способ работы со стилями. Не тащи новые зависимости.
+4. Build it following the conventions of this project: look at neighbouring components and
+   repeat their style, naming and way of working with styles. Do not pull in new dependencies.
 
-5. Проверь вёрстку по макету, если в проекте есть чем открыть страницу в браузере
-   (Playwright, dev-сервер и браузерный инструмент). Иначе пропусти шаг и скажи об этом.
-   - Пометь корневой элемент вёрстки \`data-figma-node-id="<id корня макета>"\`, а крупные
-     блоки — id их узлов. Если в проекте такие атрибуты не приняты, убери их после проверки.
-   - \`npx figma-vault verify <docId> --snippet --vault ${vaultDir}\` печатает скрипт.
-     Выполни его на свёрстанной странице и сохрани результат в файл.
-   - \`npx figma-vault verify <docId> --snapshot <файл> --vault ${vaultDir}\`.
-     FAIL — исправь перечисленное и проверь снова. INCOMPLETE — не хватает разметки.
+5. Check the layout against the design if the project has a way to open the page in a browser
+   (Playwright, a dev server and a browser tool). Otherwise skip this step and say so.
+   - Mark the root element of the layout with \`data-figma-node-id="<id of the design root>"\`, and
+     large blocks with the ids of their nodes. If such attributes are not customary in the project,
+     remove them after the check.
+   - \`npx figma-vault verify <docId> --snippet --vault ${vaultDir}\` prints a script.
+     Run it on the built page and save the result into a file.
+   - \`npx figma-vault verify <docId> --snapshot <file> --vault ${vaultDir}\`.
+     FAIL — fix what is listed and check again. INCOMPLETE — the markup is not enough.
 
-6. В конце коротко перечисли, что не удалось восстановить из данных и что не прошло
-   проверку. Известный пробел формата: у кусков текста сохраняются только цвет и жирность.
+6. At the end, briefly list what could not be restored from the data and what did not pass
+   the check. A known gap of the format: text pieces keep only color and weight.
 `;
 
 /**
@@ -123,28 +124,28 @@ export async function runInitGlobal(vaultDirArg: string): Promise<void> {
     vaultDirArg === ".figma-vault" ? path.join(home, ".figma-vault") : path.resolve(vaultDirArg);
 
   await mkdir(vault, { recursive: true });
-  out(`Хранилище: ${vault}`);
-  out("В рабочем репозитории не создано ни одного файла.");
+  out(`Vault: ${vault}`);
+  out("Not a single file has been created in the working repository.");
   out("");
-  out("Осталось два шага, оба вне проекта.");
+  out("Two steps left, both outside the project.");
   out("");
-  out("1. Токен — в переменную окружения пользователя, не в файл проекта:");
-  out("     setx FIGMA_TOKEN \"figd_...\"            (Windows, новый терминал после)");
-  out("     export FIGMA_TOKEN=figd_...             (macOS/Linux, в ~/.zshrc или ~/.bashrc)");
-  out("   Нужен только тому, кто выгружает макеты.");
+  out("1. The token goes into a user environment variable, not into a project file:");
+  out("     setx FIGMA_TOKEN \"figd_...\"            (Windows, open a new terminal afterwards)");
+  out("     export FIGMA_TOKEN=figd_...             (macOS/Linux, in ~/.zshrc or ~/.bashrc)");
+  out("   Only whoever exports designs needs it.");
   out("");
-  out("2. Зарегистрировать сервер в пользовательском конфиге агента:");
+  out("2. Register the server in the user config of your agent:");
   out("");
   out("   Claude Code:");
   out(`     claude mcp add --scope user figma-vault -- npx -y figma-vault mcp --vault "${vault}"`);
   out("");
-  out("   Codex — в ~/.codex/config.toml:");
+  out("   Codex — in ~/.codex/config.toml:");
   out("     [mcp_servers.figma-vault]");
   out('     command = "npx"');
   out(`     args = ["-y", "figma-vault", "mcp", "--vault", ${JSON.stringify(vault)}]`);
   out("");
-  out("Дальше из любого каталога:");
-  out(`  figma-vault add "<ссылка на фрейм>" --vault "${vault}"`);
+  out("Then, from any directory:");
+  out(`  figma-vault add "<link to a frame>" --vault "${vault}"`);
   out(`  figma-vault check --vault "${vault}"`);
 }
 
@@ -156,38 +157,38 @@ export async function runInit(cwd: string, vaultDir: string, options: InitOption
   const out = (line: string) => process.stdout.write(`${line}\n`);
 
   await mkdir(path.join(cwd, vaultDir), { recursive: true });
-  out(`Хранилище:      ${vaultDir}/`);
+  out(`Vault:          ${vaultDir}/`);
 
   const mcpState = await writeMcpConfig(cwd, vaultDir);
-  out(`.mcp.json:      ${mcpState} (сервер ${MCP_SERVER_NAME})`);
+  out(`.mcp.json:      ${mcpState} (server ${MCP_SERVER_NAME})`);
 
   const added = await ensureGitignore(cwd, [".env"]);
-  out(`.gitignore:     ${added.length > 0 ? `добавлено ${added.join(", ")}` : "менять не потребовалось"}`);
+  out(`.gitignore:     ${added.length > 0 ? `added ${added.join(", ")}` : "no change needed"}`);
 
   const envExample = path.join(cwd, ".env.example");
   if (!(await exists(envExample))) {
     await writeFile(envExample, "FIGMA_TOKEN=\n", "utf8");
-    out(".env.example:   создан");
+    out(".env.example:   created");
   } else {
-    out(".env.example:   уже есть");
+    out(".env.example:   already there");
   }
 
   if (options.noCommand) {
-    out(".claude/commands/figma.md: пропущено (--no-command)");
+    out(".claude/commands/figma.md: skipped (--no-command)");
   } else {
     const commandFile = path.join(cwd, ".claude", "commands", "figma.md");
     await mkdir(path.dirname(commandFile), { recursive: true });
     await writeFile(commandFile, SLASH_COMMAND(vaultDir), "utf8");
-    out(".claude/commands/figma.md: создан");
+    out(".claude/commands/figma.md: created");
   }
 
   out("");
-  out("Дальше:");
-  out("  1. Положите Figma-токен в .env строкой FIGMA_TOKEN=figd_...");
-  out("     (нужен только тому, кто выгружает макеты)");
-  out('  2. npx figma-vault add "<ссылка на фрейм>"');
-  out(`  3. Закоммитьте ${vaultDir}/ — тогда команде токен не нужен вообще`);
-  out("  4. В Claude Code: /figma <ссылка на фрейм>");
+  out("Next:");
+  out("  1. Put the Figma token into .env as FIGMA_TOKEN=figd_...");
+  out("     (only whoever exports designs needs it)");
+  out('  2. npx figma-vault add "<link to a frame>"');
+  out(`  3. Commit ${vaultDir}/ — then the team needs no token at all`);
+  out("  4. In Claude Code: /figma <link to a frame>");
   out("");
-  out("Codex и другие агенты берут тот же сервер из .mcp.json.");
+  out("Codex and other agents pick up the same server from .mcp.json.");
 }

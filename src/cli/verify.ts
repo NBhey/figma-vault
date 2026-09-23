@@ -25,7 +25,7 @@ async function resolveDocId(vault: Vault, docId: string | undefined): Promise<st
   const { docs } = await vault.list();
   if (docs.length === 1) return (docs[0] as { docId: string }).docId;
   throw new Error(
-    `Укажите docId: макетов в хранилище ${docs.length}.\n` +
+    `Specify a docId: the vault holds ${docs.length} designs.\n` +
       docs.map((doc) => `  ${doc.docId}  ${doc.nodeName}`).join("\n"),
   );
 }
@@ -55,58 +55,58 @@ function viewportHint(doc: VaultDocument, snapshot: Snapshot, report: VerifyRepo
   const scrollbar = snapshot.scrollbar ?? 0;
   if (scrollbar > 0 && Math.abs(rootWidth.actual + scrollbar - frame) <= 1) {
     return (
-      `Ширина корня ${rootWidth.actual} вместо ${frame}: ${scrollbar} px окна заняла полоса прокрутки. ` +
-      `Переснимите при ширине окна ${frame + scrollbar} px или со скрытыми полосами прокрутки.`
+      `Root width ${rootWidth.actual} instead of ${frame}: the scrollbar took ${scrollbar} px of the window. ` +
+      `Take the snapshot again at a window width of ${frame + scrollbar} px or with scrollbars hidden.`
     );
   }
   if (snapshot.viewport.w !== frame) {
-    return `Окно браузера ${snapshot.viewport.w} px, а кадр макета ${frame} px. Переснимите при ширине окна ${frame} px.`;
+    return `Browser window is ${snapshot.viewport.w} px, the design frame is ${frame} px. Take the snapshot again at a window width of ${frame} px.`;
   }
   return undefined;
 }
 
 function printReport(docId: string, report: VerifyReport, tolerance: number, hint?: string): void {
-  out(`Сверка вёрстки с макетом ${docId}\n`);
+  out(`Comparing the layout with design ${docId}\n`);
 
   const { text, geometry } = report;
-  const textMark = text.missing.length === 0 ? " OK " : "СБОЙ";
-  out(`[${textMark}] Тексты — найдено в вёрстке ${text.matched} из ${text.total}`);
+  const textMark = text.missing.length === 0 ? " OK " : "FAIL";
+  out(`[${textMark}] Texts — found in the layout ${text.matched} of ${text.total}`);
   for (const issue of text.missing.slice(0, MAX_LISTED)) {
-    out(`        нет: ${JSON.stringify(issue.content)}  (${issue.id} ${issue.name})`);
+    out(`        missing: ${JSON.stringify(issue.content)}  (${issue.id} ${issue.name})`);
   }
-  if (text.missing.length > MAX_LISTED) out(`        … и ещё ${text.missing.length - MAX_LISTED}`);
+  if (text.missing.length > MAX_LISTED) out(`        … and ${text.missing.length - MAX_LISTED} more`);
 
   if (geometry.checkedNodes === 0) {
-    out(`[ВНИМ] Геометрия — не с чем сверять: нет блоков с data-figma-node-id`);
+    out(`[WARN] Geometry — nothing to compare: no blocks with data-figma-node-id`);
   } else {
-    const geoMark = geometry.mismatches.length === 0 ? " OK " : "СБОЙ";
+    const geoMark = geometry.mismatches.length === 0 ? " OK " : "FAIL";
     out(
-      `[${geoMark}] Геометрия — сверено блоков ${geometry.checkedNodes} из ${geometry.visibleNodes} ` +
-        `видимых узлов, допуск ${tolerance}px`,
+      `[${geoMark}] Geometry — compared ${geometry.checkedNodes} blocks of ${geometry.visibleNodes} ` +
+        `visible nodes, tolerance ${tolerance}px`,
     );
     for (const issue of geometry.mismatches.slice(0, MAX_LISTED)) {
       out(
-        `        ${issue.id} ${issue.name}: ${issue.property} в макете ${issue.expected}, ` +
-          `в вёрстке ${issue.actual} (разница ${issue.delta})`,
+        `        ${issue.id} ${issue.name}: ${issue.property} in the design ${issue.expected}, ` +
+          `in the layout ${issue.actual} (difference ${issue.delta})`,
       );
     }
     if (geometry.mismatches.length > MAX_LISTED) {
-      out(`        … и ещё ${geometry.mismatches.length - MAX_LISTED}`);
+      out(`        … and ${geometry.mismatches.length - MAX_LISTED} more`);
     }
   }
-  for (const warning of report.warnings) out(`[ВНИМ] ${warning}`);
-  if (hint) out(`[ВНИМ] ${hint}`);
+  for (const warning of report.warnings) out(`[WARN] ${warning}`);
+  if (hint) out(`[WARN] ${hint}`);
 
   out();
   if (report.verdict === "PASS") {
-    out("PASS: тексты на месте, размеченные блоки совпадают с макетом.");
+    out("PASS: the texts are in place, the marked blocks match the design.");
   } else if (report.verdict === "FAIL") {
-    out("FAIL: вёрстка расходится с макетом, список выше.");
+    out("FAIL: the layout diverges from the design, see the list above.");
   } else {
     out(
-      "INCOMPLETE: расхождений не найдено, но геометрию проверить нечем.\n" +
-        "Пометьте корень вёрстки атрибутом data-figma-node-id с id корня макета\n" +
-        "и хотя бы один вложенный блок — id его узла, и снимите снимок заново.",
+      "INCOMPLETE: no mismatches found, but there is nothing to check the geometry against.\n" +
+        "Mark the root of the layout with data-figma-node-id carrying the id of the design root\n" +
+        "and at least one nested block with the id of its node, then take the snapshot again.",
     );
   }
 }
@@ -122,9 +122,9 @@ export async function runVerify(docIdArg: string | undefined, options: VerifyOpt
   }
   if (!options.snapshotFile) {
     throw new Error(
-      "Нужен снимок вёрстки: figma-vault verify <docId> --snapshot <файл>.\n" +
-        "Как его получить: figma-vault verify <docId> --snippet печатает скрипт — выполните\n" +
-        "его в браузере на свёрстанной странице и сохраните результат в файл.",
+      "A snapshot of the layout is required: figma-vault verify <docId> --snapshot <file>.\n" +
+        "How to get one: figma-vault verify <docId> --snippet prints a script — run it in\n" +
+        "the browser on the built page and save the result into a file.",
     );
   }
 

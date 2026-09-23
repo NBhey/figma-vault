@@ -30,14 +30,14 @@ async function main(): Promise<void> {
   const vault = new Vault(resolveVaultDir(process.argv.slice(2), process.env));
   const server = createServer(vault);
   await server.connect(new StdioServerTransport());
-  note(`v${SERVER_VERSION} на stdio, vault: ${vault.root}`);
+  note(`v${SERVER_VERSION} on stdio, vault: ${vault.root}`);
 }
 
 const entry = process.argv[1];
 
 if (entry !== undefined && import.meta.url === pathToFileURL(entry).href) {
   main().catch((error: unknown) => {
-    note(`не удалось запуститься: ${error instanceof Error ? error.message : String(error)}`);
+    note(`failed to start: ${error instanceof Error ? error.message : String(error)}`);
     process.exitCode = 1;
   });
 }

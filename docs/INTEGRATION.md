@@ -135,14 +135,15 @@ npx figma-vault check
 по протоколу и выводит отчёт:
 
 ```
-[ OK ] .mcp.json — сервер figma-vault зарегистрирован
-[ OK ] Хранилище — .figma-vault/, макетов: 1
-[ OK ] Макет EXAMPLE1234_1_1 — узлов: 29
-[ OK ] MCP-сервер — инструментов: 6 (vault_list, vault_get_doc, …)
-[ВНИМ] FIGMA_TOKEN — не задан — читать макеты из хранилища можно, выгружать новые нельзя
+[ OK ] .mcp.json — the figma-vault server is registered
+[ OK ] Vault — .figma-vault/, designs: 1
+[ OK ] Design EXAMPLE1234_1_1 — nodes: 29
+[ OK ] MCP server — tools: 6 (vault_list, vault_get_doc, …)
+[WARN] FIGMA_TOKEN — not set — reading designs from the vault works, exporting new ones does not
 ```
 
-Отсутствие токена помечается как ВНИМ, а не СБОЙ: это не поломка, а обычное
+Вывод CLI английский по умолчанию (T22), документация — русская.
+Отсутствие токена помечается как WARN, а не FAIL: это не поломка, а обычное
 состояние рабочего места. Код возврата при реальных проблемах — 1, так что команду
 можно ставить в CI.
 

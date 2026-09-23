@@ -53,6 +53,10 @@ test("verify: совпадающая вёрстка — PASS и код 0, docId 
   const { code, output } = await verifyWith(perfectSnapshot(true));
   assert.equal(code, VERIFY_EXIT.PASS, output);
   assert.match(output, /^PASS/m);
+  // Отчёт целиком английский: содержимого макета в нём нет, значит кириллица была бы только нашей.
+  assert.doesNotMatch(output, /[А-Яа-я]/, output);
+  assert.match(output, /\[ OK \] Texts/);
+  assert.match(output, /\[ OK \] Geometry/);
 });
 
 test("verify: пропавший текст и сдвинутый блок — FAIL и код 1 с перечнем", async () => {
@@ -62,14 +66,14 @@ test("verify: пропавший текст и сдвинутый блок — F
   if (moved) moved.x += 10;
   const { code, output } = await verifyWith(snapshot);
   assert.equal(code, VERIFY_EXIT.FAIL);
-  assert.match(output, /нет: "или"/);
-  assert.match(output, /x в макете \d+, в вёрстке \d+ \(разница 10\)/);
+  assert.match(output, /missing: "или"/);
+  assert.match(output, /x in the design \d+, in the layout \d+ \(difference 10\)/);
 });
 
 test("verify: без разметки data-figma-node-id — INCOMPLETE и код 2, а не ложный PASS", async () => {
   const { code, output } = await verifyWith(perfectSnapshot(false));
   assert.equal(code, VERIFY_EXIT.INCOMPLETE);
-  assert.match(output, /Пометьте корень вёрстки/);
+  assert.match(output, /Mark the root of the layout/);
 });
 
 test("verify: корень уже кадра на ширину полосы прокрутки — подсказка переснять, а не загадка", async () => {
@@ -78,8 +82,8 @@ test("verify: корень уже кадра на ширину полосы пр
   if (root) root.w -= 15;
   const { code, output } = await verifyWith(snapshot);
   assert.equal(code, VERIFY_EXIT.FAIL, "расхождение остаётся расхождением");
-  assert.match(output, /15 px окна заняла полоса прокрутки/);
-  assert.match(output, new RegExp(`ширине окна ${doc.root.layout.w + 15} px`));
+  assert.match(output, /scrollbar took 15 px of the window/);
+  assert.match(output, new RegExp(`window width of ${doc.root.layout.w + 15} px`));
 });
 
 test("verify: снимок, сохранённый как строка JSON внутри JSON, тоже читается", async () => {

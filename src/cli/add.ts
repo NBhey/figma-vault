@@ -5,19 +5,19 @@ import { writeSnapshot } from "../pull/storage.js";
 import { parseFigmaUrl } from "../pull/url.js";
 
 const TOKEN_HINT =
-  "Не задан FIGMA_TOKEN.\n" +
+  "FIGMA_TOKEN is not set.\n" +
   "Figma → Settings → Security → Personal access tokens → Generate new token,\n" +
-  "scope: File content (read-only). Положите его в .env строкой FIGMA_TOKEN=figd_...";
+  "scope: File content (read-only). Put it into .env as FIGMA_TOKEN=figd_...";
 
 const URL_HINT =
-  'Нужна ссылка на фрейм: figma-vault add "https://figma.com/design/...?node-id=1-42"\n' +
-  "В Figma: правая кнопка по фрейму → Copy link to selection.";
+  'A link to a frame is required: figma-vault add "https://figma.com/design/...?node-id=1-42"\n' +
+  "In Figma: right-click the frame → Copy link to selection.";
 
 function humanDuration(seconds: number): string {
-  if (seconds < 90) return `${Math.round(seconds)} с`;
-  if (seconds < 5400) return `${Math.round(seconds / 60)} мин`;
-  if (seconds < 172_800) return `${Math.round(seconds / 3600)} ч`;
-  return `${Math.round(seconds / 86_400)} сут`;
+  if (seconds < 90) return `${Math.round(seconds)} s`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min`;
+  if (seconds < 172_800) return `${Math.round(seconds / 3600)} h`;
+  return `${Math.round(seconds / 86_400)} d`;
 }
 
 /**
@@ -50,44 +50,44 @@ export async function runAdd(figmaUrl: string | undefined, options: AddOptions):
   const out = (line: string) => process.stdout.write(`${line}\n`);
 
   if (options.noAssets) {
-    process.stderr.write("Забираю только структуру, без картинок…\n");
+    process.stderr.write("Fetching the structure only, without images…\n");
     const result = await structureOnly(figmaUrl, options.vaultDir, token);
-    out(`\nГотово: ${result.docId}`);
-    out(`  узлов:    ${result.nodeCount}`);
-    out(`  каталог:  ${result.directory}`);
+    out(`\nDone: ${result.docId}`);
+    out(`  nodes:      ${result.nodeCount}`);
+    out(`  directory:  ${result.directory}`);
     out("");
-    out("Структура на месте: вёрстку по ней восстановить можно.");
-    out("Картинок и скриншота нет — доберите их позже тем же add без --no-assets.");
+    out("The structure is in place: the layout can be rebuilt from it.");
+    out("Images and the screenshot are missing — fetch them later with the same add without --no-assets.");
     return;
   }
 
-  process.stderr.write("Обращаюсь к Figma…\n");
+  process.stderr.write("Talking to Figma…\n");
   try {
     const result = await pullFigmaSelection(figmaUrl, { token, vaultDir: options.vaultDir });
-    out(`\nГотово: ${result.docId}`);
-    out(`  узлов:    ${result.nodeCount}`);
-    out(`  каталог:  ${result.directory}`);
-    for (const warning of result.warnings) out(`  внимание: ${warning}`);
+    out(`\nDone: ${result.docId}`);
+    out(`  nodes:      ${result.nodeCount}`);
+    out(`  directory:  ${result.directory}`);
+    for (const warning of result.warnings) out(`  warning:    ${warning}`);
     out("");
-    out("Макет в хранилище. Агент прочитает его через MCP без обращений к Figma.");
-    out("Закоммитьте каталог хранилища — тогда команде не нужен токен.");
+    out("The design is in the vault. An agent reads it over MCP without calling Figma.");
+    out("Commit the vault directory — then the team needs no token at all.");
   } catch (error) {
     if (error instanceof FigmaApiError && error.status === 429) {
       const wait =
         error.retryAfterSeconds !== undefined
-          ? `Figma просит подождать ${humanDuration(error.retryAfterSeconds)}.\n`
+          ? `Figma asks to wait ${humanDuration(error.retryAfterSeconds)}.\n`
           : "";
-      const plan = error.planTier ? `Тариф: ${error.planTier}. ` : "";
-      const kind = error.rateLimitType ? `Тип лимита: ${error.rateLimitType}.` : "";
+      const plan = error.planTier ? `Plan: ${error.planTier}. ` : "";
+      const kind = error.rateLimitType ? `Limit type: ${error.rateLimitType}.` : "";
       const about = plan || kind ? `${plan}${kind}\n` : "";
       throw new Error(
-        "Figma ответила 429: исчерпан лимит обращений, повторы не помогли.\n" +
+        "Figma answered 429: the rate limit is exhausted, retries did not help.\n" +
           wait +
           about +
-          "\nЧаще всего выбивается рендер картинок — у него лимит строже, чем у чтения структуры.\n" +
-          "Структуру макета обычно можно забрать прямо сейчас:\n\n" +
-          `  figma-vault add "<ссылка>" --vault ${options.vaultDir} --no-assets\n\n` +
-          "Вёрстку по ней восстановить можно; картинки доберёте позже тем же add без флага.",
+          "\nUsually it is image rendering that runs out first — its limit is stricter than the one for reading structure.\n" +
+          "The structure of the design can normally be fetched right now:\n\n" +
+          `  figma-vault add "<link>" --vault ${options.vaultDir} --no-assets\n\n` +
+          "The layout can be rebuilt from it; fetch the images later with the same add without the flag.",
       );
     }
     throw error;
@@ -100,10 +100,10 @@ export async function rateLimitStatus(fileKey: string, nodeId: string, token: st
     `https://api.figma.com/v1/images/${encodeURIComponent(fileKey)}?ids=${encodeURIComponent(nodeId)}&format=png`,
     { headers: { "X-Figma-Token": token } },
   );
-  if (response.ok) return "рендер картинок доступен";
-  if (response.status !== 429) return `рендер картинок отвечает ${response.status}`;
+  if (response.ok) return "image rendering is available";
+  if (response.status !== 429) return `image rendering answers ${response.status}`;
   const retryAfter = Number(response.headers.get("retry-after") ?? "0");
   return retryAfter > 0
-    ? `рендер картинок под лимитом, освободится примерно через ${humanDuration(retryAfter)}`
-    : "рендер картинок под лимитом, срок Figma не сообщила";
+    ? `image rendering is rate-limited, frees up in about ${humanDuration(retryAfter)}`
+    : "image rendering is rate-limited, Figma did not say for how long";
 }

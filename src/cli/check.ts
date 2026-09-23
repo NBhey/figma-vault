@@ -12,7 +12,7 @@ interface Step {
   detail?: string;
 }
 
-const MARK: Record<Status, string> = { ok: " OK ", warn: "ВНИМ", fail: "СБОЙ" };
+const MARK: Record<Status, string> = { ok: " OK ", warn: "WARN", fail: "FAIL" };
 
 async function readJson<T>(file: string): Promise<T | null> {
   try {
@@ -37,7 +37,7 @@ function probeMcp(entry: string, vaultDir: string): Promise<Step> {
     };
 
     const timer = setTimeout(
-      () => done({ status: "fail", title: "MCP-сервер", detail: "не ответил за 10 секунд" }),
+      () => done({ status: "fail", title: "MCP server", detail: "no answer within 10 seconds" }),
       10_000,
     );
 
@@ -51,8 +51,8 @@ function probeMcp(entry: string, vaultDir: string): Promise<Step> {
             const names = msg.result.tools.map((t) => t.name);
             done({
               status: names.length > 0 ? "ok" : "fail",
-              title: "MCP-сервер",
-              detail: `инструментов: ${names.length} (${names.join(", ")})`,
+              title: "MCP server",
+              detail: `tools: ${names.length} (${names.join(", ")})`,
             });
             return;
           }
@@ -63,7 +63,7 @@ function probeMcp(entry: string, vaultDir: string): Promise<Step> {
     });
 
     child.on("error", (error) =>
-      done({ status: "fail", title: "MCP-сервер", detail: error.message }),
+      done({ status: "fail", title: "MCP server", detail: error.message }),
     );
 
     const say = (obj: unknown) => child.stdin.write(`${JSON.stringify(obj)}\n`);
@@ -92,11 +92,11 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
   );
   steps.push(
     mcpConfig?.mcpServers?.["figma-vault"]
-      ? { status: "ok", title: ".mcp.json", detail: "сервер figma-vault зарегистрирован" }
+      ? { status: "ok", title: ".mcp.json", detail: "the figma-vault server is registered" }
       : {
           status: "fail",
           title: ".mcp.json",
-          detail: "записи figma-vault нет — выполните npx figma-vault init",
+          detail: "no figma-vault entry — run npx figma-vault init",
         },
   );
 
@@ -105,22 +105,22 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
   if (!index) {
     steps.push({
       status: "fail",
-      title: "Хранилище",
-      detail: `${vaultDir}/index.json не найден — выполните npx figma-vault demo`,
+      title: "Vault",
+      detail: `${vaultDir}/index.json not found — run npx figma-vault demo`,
     });
   } else {
     try {
       validateVaultIndex(index);
       steps.push({
         status: "ok",
-        title: "Хранилище",
-        detail: `${vaultDir}/, макетов: ${index.docs.length}`,
+        title: "Vault",
+        detail: `${vaultDir}/, designs: ${index.docs.length}`,
       });
     } catch (error) {
       steps.push({
         status: "fail",
-        title: "Хранилище",
-        detail: `index.json не соответствует контракту: ${(error as Error).message}`,
+        title: "Vault",
+        detail: `index.json does not match the contract: ${(error as Error).message}`,
       });
     }
 
@@ -128,7 +128,7 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
     for (const { docId } of index.docs) {
       const doc = await readJson<unknown>(path.join(target, docId, "doc.json"));
       if (!doc) {
-        steps.push({ status: "fail", title: `Макет ${docId}`, detail: "doc.json не читается" });
+        steps.push({ status: "fail", title: `Design ${docId}`, detail: "doc.json is not readable" });
         continue;
       }
       try {
@@ -138,12 +138,12 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
           count++;
           for (const c of n.children ?? []) walk(c as { children?: unknown[] });
         })((doc as { root: { children?: unknown[] } }).root);
-        steps.push({ status: "ok", title: `Макет ${docId}`, detail: `узлов: ${count}` });
+        steps.push({ status: "ok", title: `Design ${docId}`, detail: `nodes: ${count}` });
       } catch (error) {
         steps.push({
           status: "fail",
-          title: `Макет ${docId}`,
-          detail: `не соответствует контракту: ${(error as Error).message}`,
+          title: `Design ${docId}`,
+          detail: `does not match the contract: ${(error as Error).message}`,
         });
       }
     }
@@ -155,11 +155,11 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
   // 5. Токен — не ошибка, а справка
   steps.push(
     process.env.FIGMA_TOKEN
-      ? { status: "ok", title: "FIGMA_TOKEN", detail: "задан, выгрузка новых макетов доступна" }
+      ? { status: "ok", title: "FIGMA_TOKEN", detail: "set, exporting new designs is available" }
       : {
           status: "warn",
           title: "FIGMA_TOKEN",
-          detail: "не задан — читать макеты из хранилища можно, выгружать новые нельзя",
+          detail: "not set — reading designs from the vault works, exporting new ones does not",
         },
   );
 
@@ -172,9 +172,9 @@ export async function runCheck(cwd: string, vaultDir: string, entry: string): Pr
   const failed = steps.filter((s) => s.status === "fail");
   out("");
   if (failed.length === 0) {
-    out("Цепочка работает: агент прочитает макеты из хранилища без обращений к Figma.");
+    out("The chain works: an agent will read the designs from the vault without calling Figma.");
   } else {
-    out(`Проблем: ${failed.length}. Смотрите строки СБОЙ выше.`);
+    out(`Problems: ${failed.length}. See the FAIL lines above.`);
     process.exitCode = 1;
   }
 }
