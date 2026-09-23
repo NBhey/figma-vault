@@ -16,7 +16,7 @@
     "node": ">=22"
   },
   "bin": {
-    "figma-vault": "./dist/cli/index.js"
+    "figma-vault": "dist/cli/index.js"
   },
   "scripts": {
     "pull": "node --env-file-if-exists=.env --import tsx src/pull/index.ts",
