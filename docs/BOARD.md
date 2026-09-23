@@ -23,7 +23,7 @@
 | T14 | Команды demo и check: проверка цепочки без токена Figma | `src/cli/**` | claude | 2026-09-22T18:30Z | done |
 | T16 | Подготовка к публикации в npm: README на английском, LICENSE, чистый tarball, поля пакета | корень, `README*.md` | claude | 2026-09-23T05:11Z | done |
 | T17 | MCP под doc@1: `includeHidden` в чтении (скрытые узлы по умолчанию не отдаются), типы `hidden`/`text.runs`, приём doc@0 и doc@1 | `src/mcp/**` | claude | 2026-09-23T05:44Z | done |
-| T18 | Релиз 0.1.1: версия, README под doc@1, версия MCP-сервера из package.json, проверка tarball | корень, `README*.md`, `src/mcp/server.ts` | claude | 2026-09-23T05:58Z | wip |
+| T18 | Релиз 0.1.1: версия, README под doc@1, версия MCP-сервера из package.json, проверка tarball | корень, `README*.md`, `src/mcp/server.ts` | claude | 2026-09-23T05:58Z | done |
 
 ## Зависимости
 

@@ -161,7 +161,11 @@ The tree is normalized:
 
 - auto-layout becomes `mode: row|column` with `gap` and `padding`;
 - coordinates are relative to the parent;
-- styles, gradients and text come in one predictable shape.
+- styles, gradients and text come in one predictable shape, including differently
+  coloured fragments inside one text (`text.runs`);
+- nodes hidden in Figma are kept with `hidden: true`. By default the agent doesn't get
+  them, but a parent reports how many it has (`hiddenOmitted`). Pass `includeHidden: true`
+  when building a reusable component whose optional slots are switched off on this screen.
 
 The raw Figma response is saved next to it in `raw.json` for debugging.
 
@@ -187,9 +191,12 @@ the UI noticeably more accurately.
     assets/                  icons and images
 ```
 
-The `figma-vault/doc@0` schema is described in [docs/CONTRACT.md](docs/CONTRACT.md)
-(in Russian). A strict validator checks it. `doc.json` stands on its own: the MCP server
-never reads `raw.json` and never touches the network.
+The `figma-vault/doc@1` schema is described in [docs/CONTRACT.md](docs/CONTRACT.md)
+(in Russian). A strict validator checks it. Vaults pulled with 0.1.0 (`doc@0`) are
+still read as they are; there is no need to pull them again.
+
+`doc.json` stands on its own: the MCP server never reads `raw.json` and never touches
+the network.
 
 ## Known limitations
 
@@ -203,10 +210,11 @@ This is an MVP. Here is what it can't do yet.
   following `Retry-After`, and never sleeps for more than a minute. If Figma asks it to
   wait for days, the pull **keeps the node tree**, records the reason as a warning and
   doesn't fail. Run `figma-vault limits` before pulling.
-- **Mixed colours inside one text are lost.** If one word in a heading has its own
-  colour, the agent sees the whole text in one colour.
-- **Hidden nodes are dropped.** On a real design that was a third of the tree, mostly
-  optional component slots.
+- **Only colour and weight are kept for fragments inside a text.** A gradient, a
+  different font or an underline on part of a text is lost.
+- **Designs with many component variants make a large `doc.json`.** Hidden slots are kept
+  now. On a 332-node screen that added 3,400 hidden nodes, and the file grew from 444 KB
+  to 5 MB. The agent still gets about 100 KB by default, but the file goes into your git.
 
 ## How it was tested
 
@@ -244,7 +252,7 @@ child process of the agent and talks over stdio. There is nothing to deploy.
 
 ```bash
 npm install
-npm test          # 37 tests
+npm test          # 43 tests
 npm run typecheck
 npm run dev       # local preview of rebuilt markup and comparison with the design
 ```

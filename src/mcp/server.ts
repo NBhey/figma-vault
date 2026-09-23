@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
@@ -5,7 +7,8 @@ import { z } from "zod";
 import { Vault, VaultError } from "./vault.js";
 
 export const SERVER_NAME = "figma-vault";
-export const SERVER_VERSION = "0.1.0";
+// И из src/mcp, и из dist/mcp package.json лежит двумя уровнями выше: версия не расходится с пакетом.
+export const SERVER_VERSION: string = (createRequire(import.meta.url)("../../package.json") as { version: string }).version;
 
 function json(value: unknown): CallToolResult {
   return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }] };
