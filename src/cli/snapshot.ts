@@ -59,6 +59,8 @@ export function snapshotScript(rootNodeId: string): string {
     schema: "figma-vault/snapshot@0",
     root: root ? rootId : null,
     viewport: { w: innerWidth, h: innerHeight },
+    // Полоса прокрутки съедает ширину: резиновый корень в окне шириной с кадр выходит уже кадра.
+    scrollbar: innerWidth - document.documentElement.clientWidth,
     texts: [...byBlock.values()],
     nodes,
   });

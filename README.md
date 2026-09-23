@@ -122,6 +122,25 @@ with 332 nodes:
 On that design, the 141 icons cost zero requests. **So the cost of a pull doesn't depend
 on how many icons the design has.** After the pull, the agent never calls Figma again.
 
+## Check the result against the design
+
+`figma-vault verify` compares the page the agent built with the design. The package ships
+no browser: the snapshot is taken with whatever the project already uses (Playwright,
+DevTools, the agent's browser tool).
+
+1. Mark the root element of the page with `data-figma-node-id="<root node id>"`, and the
+   main blocks with the ids of their nodes.
+2. `figma-vault verify <docId> --snippet` prints a script. Run it on the page and save
+   what it returns to a file.
+3. `figma-vault verify <docId> --snapshot <file>` checks it:
+   - **texts:** every visible text of the design must be on the page;
+   - **geometry:** each marked block must match the design's position and size, within
+     2 px by default (`--tolerance`).
+
+The result is `PASS` (exit code 0), `FAIL` (1, with a list of what is off) or
+`INCOMPLETE` (2, when nothing is marked and geometry can't be checked). The `/figma`
+command runs this step itself when the project has a browser.
+
 ## Try it without a Figma token
 
 You only need a token to pull new designs. Reading works without one, which is the
@@ -233,8 +252,8 @@ Results on a product screen with 332 nodes, 15 levels deep:
 | `doc.json` against the contract | passes |
 
 **Not checked:** pixel-perfect match. We compare with Figma's reference render by eye,
-using `npm run dev` → `/compare/<name>`. There is no automated structural check of the
-rebuilt markup against `doc.json` yet.
+using `npm run dev` → `/compare/<name>`. `figma-vault verify` checks texts and the
+geometry of marked blocks, but not colours, fonts or pixels.
 
 ## What it deliberately doesn't do
 
@@ -252,7 +271,7 @@ child process of the agent and talks over stdio. There is nothing to deploy.
 
 ```bash
 npm install
-npm test          # 43 tests
+npm test          # 51 tests
 npm run typecheck
 npm run dev       # local preview of rebuilt markup and comparison with the design
 ```

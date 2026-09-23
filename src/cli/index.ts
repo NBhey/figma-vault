@@ -5,6 +5,7 @@ import { runCheck } from "./check.js";
 import { runDemo } from "./demo.js";
 import { runInit, runInitGlobal } from "./init.js";
 import { runLimits } from "./limits.js";
+import { runVerify } from "./verify.js";
 
 const USAGE = `figma-vault — локальное хранилище макетов Figma для AI-агентов
 
@@ -15,12 +16,17 @@ const USAGE = `figma-vault — локальное хранилище макет�
   figma-vault limits <figma-url>   проверить лимиты Figma до выгрузки (2 запроса)
   figma-vault check                проверить, что вся цепочка работает
   figma-vault list                 что уже выгружено
+  figma-vault verify [docId] --snippet
+                                   скрипт для браузера: снимает снимок свёрстанной страницы
+  figma-vault verify [docId] --snapshot <файл>
+                                   сверить снимок с макетом: тексты и размеченные блоки
   figma-vault mcp                  запустить MCP-сервер (вызывает агент, не человек)
 
 Опции:
   --no-assets                      только структура, без картинок (лимит рендера строже)
   --no-command                     init: не ставить слэш-команду /figma
   --vault <каталог>                по умолчанию .figma-vault
+  --tolerance <px>                 verify: допуск по геометрии, по умолчанию 2
 
 Токен: FIGMA_TOKEN в .env или в переменных окружения.
 Нужен только тому, кто выгружает макет; остальным — нет.`;
@@ -34,6 +40,9 @@ interface ParsedArgs {
   noAssets: boolean;
   globalMode: boolean;
   noCommand: boolean;
+  snippet: boolean;
+  snapshotFile?: string;
+  tolerance?: number;
 }
 
 /** Ссылку на макет принимаем и без подкоманды: `figma-vault <figma-url>` == `add <figma-url>`. */
@@ -51,6 +60,9 @@ export function parseArgs(argv: string[]): ParsedArgs {
   let noAssets = false;
   let globalMode = false;
   let noCommand = false;
+  let snippet = false;
+  let snapshotFile: string | undefined;
+  let tolerance: number | undefined;
 
   while (args.length > 0) {
     const arg = args.shift() as string;
@@ -58,6 +70,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
       const value = args.shift();
       if (!value) throw new Error("--vault требует путь к каталогу");
       vaultDir = value;
+    } else if (arg === "--snippet") {
+      snippet = true;
+    } else if (arg === "--snapshot") {
+      snapshotFile = args.shift();
+      if (!snapshotFile) throw new Error("--snapshot требует путь к файлу снимка");
+    } else if (arg === "--tolerance") {
+      tolerance = Number(args.shift());
+      if (!Number.isFinite(tolerance) || tolerance < 0) throw new Error("--tolerance требует число пикселей >= 0");
     } else if (arg === "--no-command") {
       noCommand = true;
     } else if (arg === "--global") {
@@ -73,7 +93,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, positional, vaultDir, noAssets, globalMode, noCommand };
+  return { command, positional, vaultDir, noAssets, globalMode, noCommand, snippet, snapshotFile, tolerance };
 }
 
 async function list(vaultDir: string): Promise<void> {
@@ -121,7 +141,8 @@ function loadDotEnv(): void {
 
 async function main(): Promise<void> {
   loadDotEnv();
-  const { command, positional, vaultDir, noAssets, globalMode, noCommand } = parseArgs(process.argv.slice(2));
+  const { command, positional, vaultDir, noAssets, globalMode, noCommand, snippet, snapshotFile, tolerance } =
+    parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {
     process.stdout.write(`${USAGE}\n`);
@@ -147,6 +168,9 @@ async function main(): Promise<void> {
       return;
     case "list":
       await list(vaultDir);
+      return;
+    case "verify":
+      process.exitCode = await runVerify(positional[0], { vaultDir, snippet, snapshotFile, tolerance });
       return;
     case "mcp":
       await mcp(vaultDir);
