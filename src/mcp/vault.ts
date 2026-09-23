@@ -55,6 +55,23 @@ function countNodes(node: VaultNode): number {
 }
 
 /**
+ * Копия поддерева без скрытых узлов (doc@1). У узла, чьи скрытые дети отброшены,
+ * проставляется `hiddenOmitted` — иначе агент не узнает, что слот существует.
+ */
+export function withoutHidden(node: VaultNode, omitted: { count: number }): VaultNode {
+  const copy = cloneNode(node);
+  if (!node.children) return copy;
+  const visible = node.children.filter((child) => !child.hidden);
+  const dropped = node.children.length - visible.length;
+  if (dropped > 0) {
+    copy.hiddenOmitted = dropped;
+    for (const child of node.children) if (child.hidden) omitted.count += countNodes(child);
+  }
+  copy.children = visible.map((child) => withoutHidden(child, omitted));
+  return copy;
+}
+
+/**
  * Копия поддерева не глубже `maxDepth` уровней ниже корня.
  * У узлов, чьи дети отброшены, проставляется `childrenOmitted`.
  */
@@ -82,7 +99,16 @@ function findNode(node: VaultNode, nodeId: string): VaultNode | undefined {
   return undefined;
 }
 
-function collectHits(node: VaultNode, needle: string, trail: string[], hits: SearchHit[]): void {
+function collectHits(
+  node: VaultNode,
+  needle: string,
+  trail: string[],
+  hits: SearchHit[],
+  includeHidden: boolean,
+  insideHidden = false,
+): void {
+  const hidden = insideHidden || node.hidden === true;
+  if (hidden && !includeHidden) return;
   const path_ = [...trail, node.name];
   const matchedIn: Array<"name" | "text"> = [];
   if (node.name.toLowerCase().includes(needle)) matchedIn.push("name");
@@ -91,9 +117,10 @@ function collectHits(node: VaultNode, needle: string, trail: string[], hits: Sea
   if (matchedIn.length > 0) {
     const hit: SearchHit = { id: node.id, name: node.name, type: node.type, matchedIn, path: path_ };
     if (content !== undefined) hit.text = content;
+    if (hidden) hit.hidden = true;
     hits.push(hit);
   }
-  for (const child of node.children ?? []) collectHits(child, needle, path_, hits);
+  for (const child of node.children ?? []) collectHits(child, needle, path_, hits, includeHidden, hidden);
 }
 
 /** Чтение локального хранилища. Никакой сети и никаких обращений к `raw.json` (инвариант 9). */
@@ -155,36 +182,48 @@ export class Vault {
     )) as VaultDocument;
   }
 
-  async getDoc(docId: string, maxDepth?: number): Promise<TruncatedDocument> {
+  /** Скрытые узлы по умолчанию не отдаются: статическому рендеру они только мешают. */
+  async getDoc(docId: string, maxDepth?: number, includeHidden = false): Promise<TruncatedDocument> {
     const doc = await this.getRawDoc(docId);
-    if (maxDepth === undefined) return doc;
-    if (!Number.isInteger(maxDepth) || maxDepth < 0) {
+    if (maxDepth !== undefined && (!Number.isInteger(maxDepth) || maxDepth < 0)) {
       throw new VaultError(`maxDepth должен быть целым числом >= 0, получено: ${maxDepth}`);
     }
+    let root = doc.root;
+    let hiddenNodes = 0;
+    if (!includeHidden) {
+      const hidden = { count: 0 };
+      root = withoutHidden(root, hidden);
+      hiddenNodes = hidden.count;
+    }
+    const result: TruncatedDocument = { ...doc, root };
+    if (hiddenNodes > 0) result.hidden = { omittedNodes: hiddenNodes };
+    if (maxDepth === undefined) return result;
     const omitted = { count: 0 };
-    const root = truncate(doc.root, maxDepth, omitted);
-    return { ...doc, root, truncation: { maxDepth, omittedNodes: omitted.count } };
+    result.root = truncate(root, maxDepth, omitted);
+    result.truncation = { maxDepth, omittedNodes: omitted.count };
+    return result;
   }
 
-  async getNode(docId: string, nodeId: string): Promise<VaultNode> {
+  /** Узел по id находится и скрытым: id агент мог получить из поиска с `includeHidden`. */
+  async getNode(docId: string, nodeId: string, includeHidden = false): Promise<VaultNode> {
     const doc = await this.getRawDoc(docId);
     const node = findNode(doc.root, nodeId);
     if (!node) {
       throw new VaultError(`Узел ${nodeId} не найден в ${docId}. Поиск по имени — vault_search.`);
     }
-    return node;
+    return includeHidden ? node : withoutHidden(node, { count: 0 });
   }
 
   async getTokens(docId: string): Promise<VaultTokens> {
     return (await this.getRawDoc(docId)).tokens;
   }
 
-  async search(docId: string, query: string, limit = 50): Promise<SearchResult> {
+  async search(docId: string, query: string, limit = 50, includeHidden = false): Promise<SearchResult> {
     const needle = query.trim().toLowerCase();
     if (needle.length === 0) throw new VaultError("Пустой query: нечего искать.");
     const doc = await this.getRawDoc(docId);
     const hits: SearchHit[] = [];
-    collectHits(doc.root, needle, [], hits);
+    collectHits(doc.root, needle, [], hits, includeHidden);
     return {
       docId,
       query,

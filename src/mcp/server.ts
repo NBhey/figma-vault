@@ -27,6 +27,13 @@ async function guard(run: () => Promise<CallToolResult>): Promise<CallToolResult
 }
 
 const docIdArg = z.string().min(1).describe("Идентификатор документа из vault_list");
+const includeHiddenArg = z
+  .boolean()
+  .optional()
+  .describe(
+    "Отдавать и скрытые в Figma узлы (hidden: true) — опциональные слоты компонентов. " +
+      "По умолчанию false: для вёрстки экрана как есть они не нужны.",
+  );
 
 export function createServer(vault: Vault): McpServer {
   const server = new McpServer(
@@ -39,7 +46,10 @@ export function createServer(vault: Vault): McpServer {
         "(flex), при mode=none — абсолютное позиционирование по x/y/w/h. " +
         "ВАЖНО: порядок children — это порядок отрисовки Figma, а не визуальный. " +
         "Визуальный порядок сверху вниз даёт сортировка по layout.y, иначе секции " +
-        "страницы соберутся вперемешку.",
+        "страницы соберутся вперемешку. " +
+        "Скрытые в Figma узлы по умолчанию не отдаются; hiddenOmitted у узла говорит, " +
+        "сколько скрытых детей у него есть. Они нужны, когда верстается переиспользуемый " +
+        "компонент со слотами: тогда includeHidden: true.",
     },
   );
 
@@ -60,7 +70,8 @@ export function createServer(vault: Vault): McpServer {
       title: "Документ целиком",
       description:
         "Нормализованное дерево макета вместе с токенами. maxDepth обрезает дерево по глубине " +
-        "(0 — только корень); у обрезанных узлов появляется childrenOmitted.",
+        "(0 — только корень); у обрезанных узлов появляется childrenOmitted. " +
+        "Скрытые узлы не отдаются без includeHidden.",
       inputSchema: {
         docId: docIdArg,
         maxDepth: z
@@ -69,10 +80,12 @@ export function createServer(vault: Vault): McpServer {
           .min(0)
           .optional()
           .describe("Сколько уровней ниже корня отдавать. Без параметра — всё дерево."),
+        includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ docId, maxDepth }) => guard(async () => json(await vault.getDoc(docId, maxDepth))),
+    async ({ docId, maxDepth, includeHidden }) =>
+      guard(async () => json(await vault.getDoc(docId, maxDepth, includeHidden))),
   );
 
   server.registerTool(
@@ -83,10 +96,12 @@ export function createServer(vault: Vault): McpServer {
       inputSchema: {
         docId: docIdArg,
         nodeId: z.string().min(1).describe("id узла в формате Figma, например 1:42"),
+        includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ docId, nodeId }) => guard(async () => json(await vault.getNode(docId, nodeId))),
+    async ({ docId, nodeId, includeHidden }) =>
+      guard(async () => json(await vault.getNode(docId, nodeId, includeHidden))),
   );
 
   server.registerTool(
@@ -100,11 +115,12 @@ export function createServer(vault: Vault): McpServer {
         docId: docIdArg,
         query: z.string().min(1).describe("Подстрока для поиска в name и text.content"),
         limit: z.number().int().min(1).max(500).optional().describe("Максимум совпадений, по умолчанию 50"),
+        includeHidden: includeHiddenArg,
       },
       annotations: { readOnlyHint: true, openWorldHint: false },
     },
-    async ({ docId, query, limit }) =>
-      guard(async () => json(await vault.search(docId, query, limit))),
+    async ({ docId, query, limit, includeHidden }) =>
+      guard(async () => json(await vault.search(docId, query, limit, includeHidden))),
   );
 
   server.registerTool(

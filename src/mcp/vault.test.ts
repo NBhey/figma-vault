@@ -6,7 +6,7 @@ import { test } from "node:test";
 
 import { validateVaultDocument, validateVaultIndex } from "../shared/index.js";
 import { resolveVaultDir } from "./index.js";
-import { Vault, VaultError } from "./vault.js";
+import { Vault, VaultError, withoutHidden } from "./vault.js";
 import type { VaultNode } from "./types.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -57,7 +57,7 @@ test("фикстура соблюдает инварианты контракт�
       assert.ok(node.text.size && node.text.weight, `${node.id}: токен без дублирующих полей`);
     }
     for (const color of [node.text?.color, node.style?.fill, node.style?.stroke]) {
-      if (color) assert.match(color, /^(#[0-9A-F]{6}|rgba\(.+\))$/, `нестандартный цвет ${color}`);
+      if (typeof color === "string") assert.match(color, /^(#[0-9A-F]{6}|rgba\(.+\))$/, `нестандартный цвет ${color}`);
     }
     for (const child of node.children ?? []) walk(child, node);
   };
@@ -84,6 +84,37 @@ test("vault_get_doc обрезает дерево по maxDepth и считае�
   assert.equal(rootOnly.truncation?.omittedNodes, 28);
   // Обрезка не должна портить исходный документ в кеше файловой системы.
   assert.equal(countNodes((await vault.getDoc(DOC)).root), 29);
+});
+
+test("скрытые узлы отбрасываются, а их число остаётся у родителя", () => {
+  const layout = { mode: "none" as const, x: 0, y: 0, w: 10, h: 10 };
+  const tree: VaultNode = {
+    id: "1:1", name: "Field", type: "frame", layout, children: [
+      { id: "1:2", name: "Label", type: "text", layout, text: { content: "Email" }, children: [] },
+      { id: "1:3", name: "Icon", type: "frame", layout, hidden: true, children: [
+        { id: "1:4", name: "Glyph", type: "vector", layout, children: [] },
+      ] },
+      { id: "1:5", name: "Row", type: "frame", layout, children: [
+        { id: "1:6", name: "Badge", type: "frame", layout, hidden: true, children: [] },
+      ] },
+    ],
+  };
+  const omitted = { count: 0 };
+  const visible = withoutHidden(tree, omitted);
+
+  assert.deepEqual(visible.children?.map((child) => child.id), ["1:2", "1:5"]);
+  assert.equal(visible.hiddenOmitted, 1);
+  assert.equal(visible.children?.[1]?.hiddenOmitted, 1);
+  assert.deepEqual(visible.children?.[1]?.children, []);
+  assert.equal(omitted.count, 3, "скрытый узел считается вместе с потомками");
+  assert.equal(visible.children?.[0]?.hiddenOmitted, undefined, "у узла без скрытых детей поля нет");
+  assert.equal(tree.children?.length, 3, "исходное дерево не меняется");
+});
+
+test("документ без скрытых узлов отдаётся без отчёта о них", async () => {
+  const doc = await vault.getDoc(DOC);
+  assert.equal(doc.hidden, undefined);
+  assert.equal(countNodes(doc.root), 29);
 });
 
 test("vault_get_node возвращает поддерево целиком", async () => {

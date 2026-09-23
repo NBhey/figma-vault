@@ -1,5 +1,6 @@
 /**
- * Зеркало формата `figma-vault/doc@0` из `docs/CONTRACT.md`.
+ * Зеркало формата `figma-vault/doc@0` и `doc@1` из `docs/CONTRACT.md`.
+ * doc@1 — надмножество doc@0: `hidden`, `text.runs`, градиенты в `style.fill`/`style.stroke`.
  * MCP-сервер читает vault и ничего в него не пишет, поэтому типы здесь — только для чтения.
  */
 
@@ -19,14 +20,29 @@ export interface VaultLayout {
   wrap?: boolean;
 }
 
+/** Градиент: три ручки Figma в координатах рамки узла, стопы по возрастанию `at`. */
+export interface VaultGradient {
+  type: "linear" | "radial" | "angular" | "diamond";
+  handles: [{ x: number; y: number }, { x: number; y: number }, { x: number; y: number }];
+  stops: Array<{ at: number; color: string }>;
+}
+
 export interface VaultStyle {
-  fill?: string;
-  stroke?: string;
+  fill?: string | VaultGradient;
+  stroke?: string | VaultGradient;
   strokeWidth?: number;
   radius?: [number, number, number, number];
   opacity?: number;
   shadow?: string;
   blur?: number;
+}
+
+/** Фрагмент текста со своим оформлением, индексы — по `text.content` в единицах JS-строки. */
+export interface VaultTextRun {
+  start: number;
+  end: number;
+  color?: string;
+  weight?: number;
 }
 
 export interface VaultText {
@@ -39,6 +55,7 @@ export interface VaultText {
   weight?: number;
   lineHeight?: number;
   letterSpacing?: number;
+  runs?: VaultTextRun[];
 }
 
 export interface VaultAsset {
@@ -57,6 +74,10 @@ export interface VaultNode {
   text?: VaultText;
   asset?: VaultAsset;
   children?: VaultNode[];
+  /** doc@1: узел выключен в Figma. У видимых узлов поля нет. */
+  hidden?: true;
+  /** Ставится только в ответах MCP, когда скрытые дети не отданы (`includeHidden: false`). */
+  hiddenOmitted?: number;
   /** Ставится только в ответе `vault_get_doc` при обрезке по `maxDepth`. В doc.json не встречается. */
   childrenOmitted?: number;
 }
@@ -85,7 +106,7 @@ export interface VaultSource {
 }
 
 export interface VaultDocument {
-  schema: "figma-vault/doc@0";
+  schema: "figma-vault/doc@0" | "figma-vault/doc@1";
   source: VaultSource;
   tokens: VaultTokens;
   root: VaultNode;
@@ -112,6 +133,10 @@ export interface TruncatedDocument extends VaultDocument {
     maxDepth: number;
     omittedNodes: number;
   };
+  /** Сколько узлов не отдано, потому что они скрыты. Нет поля — скрытых не было или они отданы. */
+  hidden?: {
+    omittedNodes: number;
+  };
 }
 
 export interface SearchHit {
@@ -123,6 +148,8 @@ export interface SearchHit {
   /** Путь от корня: имена предков, включая сам узел. */
   path: string[];
   text?: string;
+  /** Только при `includeHidden`: узел скрыт сам или лежит внутри скрытого. */
+  hidden?: true;
 }
 
 export interface SearchResult {
