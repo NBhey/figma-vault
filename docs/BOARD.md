@@ -22,6 +22,7 @@
 | T13 | Инструкция по раздаче команде и подключению к рабочему проекту | `docs/INTEGRATION.md` | claude | 2026-09-22T18:05Z | done |
 | T14 | Команды demo и check: проверка цепочки без токена Figma | `src/cli/**` | claude | 2026-09-22T18:30Z | done |
 | T16 | Подготовка к публикации в npm: README на английском, LICENSE, чистый tarball, поля пакета | корень, `README*.md` | claude | 2026-09-23T05:15Z | done |
+| T17 | MCP под doc@1: `includeHidden` в чтении (скрытые узлы по умолчанию не отдаются), типы `hidden`/`text.runs`, приём doc@0 и doc@1 | `src/mcp/**` | claude | 2026-09-23T06:15Z | wip |
 
 ## Зависимости
 
