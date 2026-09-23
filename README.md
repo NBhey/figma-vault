@@ -94,6 +94,10 @@ figma-vault check             # verify the whole chain works
 figma-vault demo              # add a demo design, no token needed
 ```
 
+CLI output, errors and the MCP tool descriptions are in English by default; the `/figma`
+command it installs is in English too. [README.ru.md](README.ru.md) is a translation of
+the documentation only.
+
 After `init`, Claude Code has one command:
 
 ```
@@ -221,8 +225,6 @@ the network.
 
 This is an MVP. Here is what it can't do yet.
 
-- **The CLI and MCP tool descriptions are in Russian.** Agents read Russian fine,
-  but people reading the CLI output may not.
 - **Image-render limit.** Figma's `/v1/images` endpoint runs out sooner than tree
   reads do, and the block can last for days. Icons no longer depend on it, but the frame
   screenshot and raster images still do. The client retries up to three times,
@@ -271,7 +273,7 @@ child process of the agent and talks over stdio. There is nothing to deploy.
 
 ```bash
 npm install
-npm test          # 51 tests
+npm test          # 57 tests
 npm run typecheck
 npm run dev       # local preview of rebuilt markup and comparison with the design
 ```
