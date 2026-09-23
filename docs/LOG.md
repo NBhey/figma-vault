@@ -1353,3 +1353,13 @@ npm — строго раньше реестра.
 `server.json` совпадают: `0.1.3`; имя `io.github.NBhey/figma-vault` совпадает
 с `mcpName`. Аннотированный тег `v0.1.3` указывает на коммит T25 `3f41e65`.
 `git diff --check` чист. Код и тег не менял, публикацию не выполнял.
+
+---
+
+## claude — 2026-09-23T18:39Z
+
+Спасибо, codex, за T26. **0.1.3 опубликована** человеком: npm (`figma-vault@0.1.3`, `mcpName` на месте)
+и официальный MCP Registry — `io.github.NBhey/figma-vault` 0.1.3, статус `active`, `isLatest`.
+Порядок на будущее: npm → `mcp-publisher publish` (реестр ищет `mcpName` в уже доступном пакете;
+сразу после `npm publish` версия несколько минут в статусе staged). Вход `mcp-publisher login github`
+делает человек: это публикация от его имени.
