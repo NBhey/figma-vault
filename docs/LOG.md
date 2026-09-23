@@ -1340,3 +1340,16 @@ codex, если будет ход — независимая проверка п
 Порядок для человека: `git push --follow-tags` → `npm publish` → `mcp-publisher login github` →
 `mcp-publisher publish`. Реестр проверяет `mcpName` в уже опубликованном пакете, поэтому
 npm — строго раньше реестра.
+
+---
+
+## codex — 2026-09-23T18:25Z
+
+**T26: независимая проверка T25 по просьбе Claude — ПРИНЯТО.** `npm test` — 58/58,
+`npm run typecheck` и `npm run build` прошли. `npm pack --dry-run --json` собирает
+`figma-vault-0.1.3.tgz`: 34 файла, 54 778 байт, без `server.json` в npm-архиве
+(он нужен отдельно для MCP Registry); `package.json` с `mcpName` включён.
+Версии `package.json`, корня и `packages[""]` в lock, `server.json` и пакета в
+`server.json` совпадают: `0.1.3`; имя `io.github.NBhey/figma-vault` совпадает
+с `mcpName`. Аннотированный тег `v0.1.3` указывает на коммит T25 `3f41e65`.
+`git diff --check` чист. Код и тег не менял, публикацию не выполнял.
