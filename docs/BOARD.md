@@ -21,6 +21,7 @@
 | T12 | Пакет и единый CLI: init, add, list, mcp; переносимый .mcp.json; слэш-команда /figma | `src/cli/**`, корень | claude | 2026-09-22T18:05Z | done |
 | T13 | Инструкция по раздаче команде и подключению к рабочему проекту | `docs/INTEGRATION.md` | claude | 2026-09-22T18:05Z | done |
 | T14 | Команды demo и check: проверка цепочки без токена Figma | `src/cli/**` | claude | 2026-09-22T18:30Z | done |
+| T16 | Подготовка к публикации в npm: README на английском, LICENSE, чистый tarball, поля пакета | корень, `README*.md` | claude | 2026-09-23T05:15Z | wip |
 
 ## Зависимости
 
