@@ -14,6 +14,7 @@ import type {
   VaultPoint,
   VaultStyle,
   VaultText,
+  VaultTextRun,
   VaultTokens,
 } from "./types.js";
 
@@ -213,10 +214,14 @@ function mapText(node: FigmaNode, styles: Record<string, JsonRecord>): VaultText
   const fontSize = number(source.fontSize);
   const rawWeight = number(source.fontWeight) ?? Number.parseInt(String(source.fontWeight ?? ""), 10);
   const weight = Number.isFinite(rawWeight) ? rounded(rawWeight) : undefined;
+  const content = typeof node.characters === "string" ? node.characters : "";
+  const baseColor = colorToCss(firstVisiblePaint(node.fills, "SOLID"));
+  const runs = mapTextRuns(node, content, baseColor, weight);
   return {
-    content: typeof node.characters === "string" ? node.characters : "",
+    content,
     token: styleName(node, "text", styles),
-    color: colorToCss(firstVisiblePaint(node.fills, "SOLID")),
+    color: runs?.[0]?.color ?? baseColor,
+    runs,
     align: mapTextAlignment(source.textAlignHorizontal),
     font: text(source.fontFamily),
     size: fontSize === undefined ? undefined : rounded(fontSize),
@@ -224,6 +229,38 @@ function mapText(node: FigmaNode, styles: Record<string, JsonRecord>): VaultText
     lineHeight: number(source.lineHeightPx) === undefined ? undefined : rounded(source.lineHeightPx),
     letterSpacing: number(source.letterSpacing) === undefined ? undefined : rounded(source.letterSpacing),
   };
+}
+
+function mapTextRuns(
+  node: FigmaNode,
+  content: string,
+  baseColor: string | undefined,
+  baseWeight: number | undefined,
+): VaultTextRun[] | undefined {
+  const overrides = Array.isArray(node.characterStyleOverrides) ? node.characterStyleOverrides : [];
+  const table = record(node.styleOverrideTable) ?? {};
+  if (content.length === 0 || overrides.length === 0) return undefined;
+
+  const runs: VaultTextRun[] = [];
+  for (let index = 0; index < content.length; index += 1) {
+    const overrideId = number(overrides[index]) ?? 0;
+    const override = overrideId === 0 ? undefined : record(table[String(overrideId)]);
+    const color = colorToCss(firstVisiblePaint(override?.fills, "SOLID")) ?? baseColor;
+    const rawWeight = override ? number(override.fontWeight) : undefined;
+    const weight = rawWeight === undefined ? baseWeight : rounded(rawWeight);
+    const last = runs[runs.length - 1];
+    if (last && last.color === color && last.weight === weight) {
+      last.end = index + 1;
+    } else {
+      runs.push({ start: index, end: index + 1, color, weight });
+    }
+  }
+
+  // No visual variation: keep the small doc@0 representation.
+  if (runs.length === 1 && runs[0]?.color === baseColor && runs[0]?.weight === baseWeight) {
+    return undefined;
+  }
+  return runs;
 }
 
 function componentName(node: FigmaNode, components: Record<string, JsonRecord>): string | undefined {
@@ -246,20 +283,23 @@ function normalizeNode(
   parentBounds: FigmaRect | undefined,
   entry: FigmaNodeEntry,
   isRoot = false,
+  ancestorHidden = false,
 ): VaultNode | null {
-  if (node.visible === false) return null;
+  const hidden = node.visible === false;
   const bounds = nodeBounds(node);
   const mappedType = mapNodeType(node);
   const styles = entry.styles ?? {};
   const children = (node.children ?? [])
-    .map((child) => normalizeNode(child, bounds, entry))
+    .map((child) => normalizeNode(child, bounds, entry, false, ancestorHidden || hidden))
     .filter((child): child is VaultNode => child !== null);
   const style = mapStyle(node);
   const nodeText = mapText(node, styles);
-  const asset = assetFor(node, mappedType, bounds);
+  // Hidden slots remain structural data; fetching their visual assets would
+  // consume the limited image-render budget for content absent from the screen.
+  const asset = ancestorHidden || hidden ? undefined : assetFor(node, mappedType, bounds);
 
-  if (!isRoot && bounds.width === 0 && bounds.height === 0 && children.length === 0 && !nodeText) return null;
-  if (!isRoot && mappedType === "group" && children.length === 0 && !style && !asset) return null;
+  if (!isRoot && !hidden && !ancestorHidden && bounds.width === 0 && bounds.height === 0 && children.length === 0 && !nodeText) return null;
+  if (!isRoot && !hidden && !ancestorHidden && mappedType === "group" && children.length === 0 && !style && !asset) return null;
 
   const mode = node.layoutMode === "HORIZONTAL" ? "row" : node.layoutMode === "VERTICAL" ? "column" : "none";
   const parentX = parentBounds?.x ?? bounds.x;
@@ -292,6 +332,7 @@ function normalizeNode(
     style,
     text: nodeText,
     asset,
+    hidden: hidden ? true : undefined,
     children,
   };
 }
@@ -446,7 +487,7 @@ export function normalizeFigmaResponse(
   const tokens = inferTokens(root, extractTokens(entry.document, entry));
 
   return {
-    schema: "figma-vault/doc@0",
+    schema: "figma-vault/doc@1",
     source: {
       fileKey,
       nodeId,

@@ -46,6 +46,13 @@ export const vaultStyleSchema = z.object({
   blur: nonNegative.optional(),
 }).strict();
 
+const vaultTextRunSchema = z.object({
+  start: z.number().int().nonnegative(),
+  end: z.number().int().positive(),
+  color: cssColor.optional(),
+  weight: finiteNumber.optional(),
+}).strict();
+
 export const vaultTextSchema = z.object({
   content: z.string(),
   token: z.string().min(1).optional(),
@@ -56,7 +63,20 @@ export const vaultTextSchema = z.object({
   weight: finiteNumber.optional(),
   lineHeight: nonNegative.optional(),
   letterSpacing: finiteNumber.optional(),
-}).strict();
+  runs: z.array(vaultTextRunSchema).optional(),
+}).strict().superRefine((value, context) => {
+  let previousEnd = 0;
+  for (const [index, run] of (value.runs ?? []).entries()) {
+    if (run.start < previousEnd || run.end <= run.start || run.end > value.content.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["runs", index],
+        message: "text runs must be ordered, non-overlapping ranges within content",
+      });
+    }
+    previousEnd = run.end;
+  }
+});
 
 export interface ValidVaultNode {
   id: string;
@@ -67,6 +87,7 @@ export interface ValidVaultNode {
   style?: z.infer<typeof vaultStyleSchema>;
   text?: z.infer<typeof vaultTextSchema>;
   asset?: { path: string; w: number; h: number };
+  hidden?: true;
   children: ValidVaultNode[];
 }
 
@@ -83,6 +104,7 @@ export const vaultNodeSchema: z.ZodType<ValidVaultNode> = z.lazy(() => z.object(
     w: nonNegative,
     h: nonNegative,
   }).strict().optional(),
+  hidden: z.literal(true).optional(),
   children: z.array(vaultNodeSchema),
 }).strict());
 
@@ -99,7 +121,7 @@ export const vaultTokensSchema = z.object({
 }).strict();
 
 export const vaultDocumentSchema = z.object({
-  schema: z.literal("figma-vault/doc@0"),
+  schema: z.enum(["figma-vault/doc@0", "figma-vault/doc@1"]),
   source: z.object({
     fileKey: z.string().min(1),
     nodeId: z.string().min(1),
@@ -129,4 +151,3 @@ export const vaultIndexSchema = z.object({
 
 export type ValidVaultDocument = z.infer<typeof vaultDocumentSchema>;
 export type ValidVaultIndex = z.infer<typeof vaultIndexSchema>;
-

@@ -89,20 +89,56 @@ test("parseFigmaUrl rejects non-Figma and missing selections", () => {
 
 test("normalizeFigmaResponse produces relative, self-contained nodes", () => {
   const doc = normalizeFigmaResponse(response, "abc123", "1:2", "2026-09-22T00:00:00.000Z");
-  assert.equal(doc.schema, "figma-vault/doc@0");
+  assert.equal(doc.schema, "figma-vault/doc@1");
   assert.equal(doc.root.layout.mode, "column");
   assert.deepEqual(doc.root.layout.padding, [16, 16, 16, 16]);
   assert.equal(doc.root.children[0]?.layout.x, 16);
   assert.equal(doc.root.children[0]?.text?.token, "label/md");
   assert.equal(doc.root.children[1]?.asset?.path, "assets/2_4.png");
   assert.equal(doc.root.children[2]?.asset?.path, "assets/2_5.svg");
-  assert.equal(doc.root.children.some((node) => node.name === "Hidden"), false);
-  assert.equal(countVaultNodes(doc.root), 4);
+  assert.equal(doc.root.children.find((node) => node.name === "Hidden")?.hidden, true);
+  assert.equal(countVaultNodes(doc.root), 5);
 });
 
 test("collectRenderTargets separates image fills and vectors", () => {
   const targets = collectRenderTargets(response.nodes["1:2"]!.document);
   assert.deepEqual(targets, { png: ["2:4"], svg: ["2:5"] });
+});
+
+test("hidden component slots stay in doc@1 without requesting invisible assets", () => {
+  const hidden: FigmaNodesResponse = {
+    name: "Hidden slot",
+    nodes: {
+      "1:1": {
+        document: {
+          id: "1:1",
+          name: "Screen",
+          type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 },
+          children: [{
+            id: "1:2",
+            name: "Optional image",
+            type: "FRAME",
+            visible: false,
+            absoluteBoundingBox: { x: 10, y: 10, width: 40, height: 40 },
+            children: [{
+              id: "1:3",
+              name: "Image",
+              type: "RECTANGLE",
+              absoluteBoundingBox: { x: 10, y: 10, width: 40, height: 40 },
+              fills: [{ type: "IMAGE", imageRef: "hidden" }],
+            }],
+          }],
+        },
+      },
+    },
+  };
+
+  const doc = normalizeFigmaResponse(hidden, "file", "1:1");
+  const slot = doc.root.children[0];
+  assert.equal(slot?.hidden, true);
+  assert.equal(slot?.children[0]?.asset, undefined);
+  assert.deepEqual(collectRenderTargets(hidden.nodes["1:1"]!.document), { png: [], svg: [] });
 });
 
 test("normalizeFigmaResponse infers repeated colors, typography, and effects without shared styles", () => {
@@ -158,6 +194,70 @@ test("normalizeFigmaResponse does not replace shared text tokens with inferred n
   assert.ok(doc.tokens.text["label/md"]);
   assert.equal(doc.root.children[0]?.text?.token, "label/md");
   assert.equal(Object.keys(doc.tokens.text).some((name) => name.startsWith("inferred/")), false);
+});
+
+test("normalizeFigmaResponse keeps styled text ranges and defaults after shortened overrides", () => {
+  const mixed: FigmaNodesResponse = {
+    name: "Mixed text",
+    nodes: {
+      "1:1": {
+        document: {
+          id: "1:1",
+          name: "Text",
+          type: "TEXT",
+          characters: "One TWO end",
+          absoluteBoundingBox: { x: 0, y: 0, width: 120, height: 24 },
+          fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+          style: { fontFamily: "Inter", fontSize: 16, fontWeight: 400 },
+          characterStyleOverrides: [0, 0, 0, 0, 1, 1, 1],
+          styleOverrideTable: {
+            "1": {
+              fontWeight: 900,
+              fills: [{ type: "SOLID", color: { r: 17 / 255, g: 212 / 255, b: 82 / 255 } }],
+            },
+          },
+        },
+      },
+    },
+  };
+
+  const doc = normalizeFigmaResponse(mixed, "file", "1:1");
+  assert.equal(doc.root.text?.color, "#FFFFFF");
+  assert.deepEqual(doc.root.text?.runs, [
+    { start: 0, end: 4, color: "#FFFFFF", weight: 400 },
+    { start: 4, end: 7, color: "#11D452", weight: 900 },
+    { start: 7, end: 11, color: "#FFFFFF", weight: 400 },
+  ]);
+});
+
+test("normalizeFigmaResponse uses the first styled fragment as text.color", () => {
+  const mixed: FigmaNodesResponse = {
+    name: "First fragment",
+    nodes: {
+      "1:1": {
+        document: {
+          id: "1:1",
+          name: "Text",
+          type: "TEXT",
+          characters: "Hi!",
+          absoluteBoundingBox: { x: 0, y: 0, width: 30, height: 20 },
+          fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 } }],
+          style: { fontWeight: 400 },
+          characterStyleOverrides: [1, 1],
+          styleOverrideTable: {
+            "1": { fills: [{ type: "SOLID", color: { r: 0, g: 0, b: 0 } }] },
+          },
+        },
+      },
+    },
+  };
+
+  const doc = normalizeFigmaResponse(mixed, "file", "1:1");
+  assert.equal(doc.root.text?.color, "#000000");
+  assert.deepEqual(doc.root.text?.runs, [
+    { start: 0, end: 2, color: "#000000", weight: 400 },
+    { start: 2, end: 3, color: "#FFFFFF", weight: 400 },
+  ]);
 });
 
 test("normalizeFigmaResponse keeps gradient fills as handles and stops", () => {

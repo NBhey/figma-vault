@@ -34,3 +34,28 @@ test("validator rejects unknown schema versions", () => {
   );
 });
 
+test("validator accepts doc@1 text runs and hidden slots while retaining doc@0", async () => {
+  const oldDoc = await readVaultDocument(path.join(fixtureRoot, "EXAMPLE1234_1_1", "doc.json"));
+  assert.equal(oldDoc.schema, "figma-vault/doc@0");
+  const upgraded = structuredClone(oldDoc);
+  upgraded.schema = "figma-vault/doc@1";
+  upgraded.root.children.push({
+    id: "hidden:1",
+    name: "Optional label",
+    type: "text",
+    hidden: true,
+    layout: { mode: "none", x: 0, y: 0, w: 20, h: 20 },
+    text: {
+      content: "Hi!",
+      color: "#FFFFFF",
+      runs: [
+        { start: 0, end: 2, color: "#FFFFFF", weight: 400 },
+        { start: 2, end: 3, color: "#000000", weight: 900 },
+      ],
+    },
+    children: [],
+  });
+  assert.equal(validateVaultDocument(upgraded).schema, "figma-vault/doc@1");
+  upgraded.root.children.at(-1)!.text!.runs![1]!.start = 1;
+  assert.throws(() => validateVaultDocument(upgraded), /text runs must be ordered/);
+});

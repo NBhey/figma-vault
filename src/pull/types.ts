@@ -85,12 +85,21 @@ export interface VaultText {
   content: string;
   token?: string;
   color?: string;
+  runs?: VaultTextRun[];
   align?: "left" | "center" | "right";
   font?: string;
   size?: number;
   weight?: number;
   lineHeight?: number;
   letterSpacing?: number;
+}
+
+/** UTF-16 offsets into VaultText.content; end is exclusive. */
+export interface VaultTextRun {
+  start: number;
+  end: number;
+  color?: string;
+  weight?: number;
 }
 
 export interface VaultNode {
@@ -102,6 +111,7 @@ export interface VaultNode {
   style?: VaultStyle;
   text?: VaultText;
   asset?: { path: string; w: number; h: number };
+  hidden?: true;
   children: VaultNode[];
 }
 
@@ -121,7 +131,7 @@ export interface VaultTokens {
 }
 
 export interface VaultDocument {
-  schema: "figma-vault/doc@0";
+  schema: "figma-vault/doc@0" | "figma-vault/doc@1";
   source: {
     fileKey: string;
     nodeId: string;
@@ -153,4 +163,3 @@ export interface RenderTargets {
   png: string[];
   svg: string[];
 }
-
