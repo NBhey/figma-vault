@@ -106,7 +106,21 @@ async function mcp(vaultDir: string): Promise<void> {
   process.stderr.write(`[figma-vault] MCP на stdio, хранилище: ${vaultDir}\n`);
 }
 
+/**
+ * `.env` текущего каталога. `npm run cli` подгружает его флагом node, а у установленного
+ * бинаря такого флага нет — без этой функции токен из `.env` не виден.
+ * Уже заданные переменные окружения `.env` не перекрывает.
+ */
+function loadDotEnv(): void {
+  try {
+    process.loadEnvFile(".env");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
+  }
+}
+
 async function main(): Promise<void> {
+  loadDotEnv();
   const { command, positional, vaultDir, noAssets, globalMode, noCommand } = parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {

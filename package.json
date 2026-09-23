@@ -1,8 +1,17 @@
 {
   "name": "figma-vault",
   "version": "0.1.0",
+  "description": "Pull a Figma frame once, then let Claude Code, Codex and other MCP agents read it offline with no Figma rate limits",
+  "author": "NBhey",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NBhey/figma-vault.git"
+  },
+  "homepage": "https://github.com/NBhey/figma-vault#readme",
+  "bugs": {
+    "url": "https://github.com/NBhey/figma-vault/issues"
+  },
   "type": "module",
-  "description": "Локальное хранилище макетов Figma + MCP-сервер для AI-агентов",
   "engines": {
     "node": ">=22"
   },
@@ -13,7 +22,7 @@
     "pull": "node --env-file-if-exists=.env --import tsx src/pull/index.ts",
     "mcp": "tsx src/mcp/index.ts",
     "mcp:example": "tsx src/mcp/index.ts --vault vault/example",
-    "build": "tsc -p tsconfig.json",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "dev": "node scripts/serve.mjs",
@@ -31,14 +40,23 @@
   },
   "files": [
     "dist",
+    "!dist/**/*.test.js",
+    "!dist/**/*.map",
     "vault/example",
-    "README.md"
+    "README.md",
+    "README.ru.md",
+    "LICENSE"
   ],
   "keywords": [
     "figma",
     "mcp",
+    "model-context-protocol",
     "ai-agents",
-    "design-to-code"
+    "claude-code",
+    "codex",
+    "design-to-code",
+    "offline",
+    "rate-limit"
   ],
   "license": "MIT"
 }
