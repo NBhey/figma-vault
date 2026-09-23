@@ -19,7 +19,7 @@ export interface PullResult extends WriteSnapshotResult {
 
 function renderFailure(label: string, reason: unknown): string {
   const message = reason instanceof Error ? reason.message : String(reason);
-  return `${label} недоступен: ${message}`;
+  return `${label} unavailable: ${message}`;
 }
 
 function settledImages(
@@ -47,8 +47,8 @@ export async function pullFigmaSelection(figmaUrl: string, options: PullOptions)
     client.renderNodes(fileKey, targets.svg, "svg"),
   ]);
   const renderWarnings: string[] = [];
-  const screenshots = settledImages(renderResults[0], "Скриншот", renderWarnings);
-  const pngAssets = settledImages(renderResults[1], "Растровые ассеты", renderWarnings);
+  const screenshots = settledImages(renderResults[0], "Screenshot", renderWarnings);
+  const pngAssets = settledImages(renderResults[1], "Raster assets", renderWarnings);
   const svgAssets = settledImages(renderResults[2], "SVG fallback", renderWarnings);
 
   const artifacts: RemoteArtifact[] = [];

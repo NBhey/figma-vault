@@ -26,7 +26,7 @@
 | T18 | Релиз 0.1.1: версия, README под doc@1, версия MCP-сервера из package.json, проверка tarball | корень, `README*.md`, `src/mcp/server.ts` | claude | 2026-09-23T05:53Z | done |
 | T20 | CLI сверки: `figma-vault verify` + `--snippet` для снимка DOM, шаг в `/figma` | `src/cli/**` | claude | 2026-09-23T05:55Z | done |
 | T19 | Автоматическая структурная сверка: ядро без браузерной зависимости и QA на реальном макете | `src/pull/**`, `docs/QUALITY.md` | codex | 2026-09-23T05:54:33Z | done |
-| T21 | Английские пользовательские предупреждения экспортёра Figma | `src/pull/**` | codex | 2026-09-23T06:19Z | wip |
+| T21 | Английские пользовательские предупреждения экспортёра Figma | `src/pull/**` | codex | 2026-09-23T06:19Z | done |
 
 ## Зависимости
 

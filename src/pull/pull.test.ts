@@ -69,8 +69,8 @@ test("pull keeps structure and local SVGs when optional Figma renders stay rate-
     assert.equal(result.nodeCount, 3);
     assert.equal(result.assetCount, 1);
     assert.equal(calls.filter((url) => url.includes("/images/")).length, 2);
-    assert.ok(result.warnings.some((warning) => warning.includes("Скриншот недоступен")));
-    assert.ok(result.warnings.some((warning) => warning.includes("Растровые ассеты недоступен")));
+    assert.ok(result.warnings.some((warning) => warning.includes("Screenshot unavailable")));
+    assert.ok(result.warnings.some((warning) => warning.includes("Raster assets unavailable")));
     assert.match(
       await readFile(path.join(result.directory, "assets/1_3.svg"), "utf8"),
       /<svg/,
