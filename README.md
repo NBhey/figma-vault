@@ -2,11 +2,31 @@
 
 **English** · [Русский](README.ru.md)
 
-A local store of Figma designs for AI coding agents.
+[![npm](https://img.shields.io/npm/v/figma-vault)](https://www.npmjs.com/package/figma-vault)
+[![license: MIT](https://img.shields.io/npm/l/figma-vault)](LICENSE)
+[![node](https://img.shields.io/node/v/figma-vault)](package.json)
 
-You pull a frame from Figma **once**. It is normalized and written to disk. From then on
-Claude Code, Codex or any other MCP client can read it as often as it likes, with no
-Figma calls, no token and no rate limits.
+**Pull a Figma frame once. Then Claude Code, Codex or any MCP agent reads it as often as it
+likes: offline, with no Figma token and no rate limits.**
+
+<p align="center">
+  <img src="docs/media/demo.svg" alt="figma-vault init, demo and check in a terminal: the chain works without a Figma token" width="860">
+</p>
+
+- **3 Figma requests per screen**, spent once when you pull it. After that it's zero,
+  however many times the agent looks.
+- **Icons cost nothing.** A real screen had 141 icons, and they took no extra requests.
+- **Commit the vault and the team needs no Figma access.** No licence, no token.
+
+Try it in 30 seconds. You don't need a Figma token for this:
+
+```bash
+npm i -g figma-vault
+figma-vault init && figma-vault demo && figma-vault check
+```
+
+How it works: the pull normalizes the frame and writes it to disk. The agent then reads
+it over MCP.
 
 ```
 one developer:      figma-vault add <link>  →  vault  →  git commit

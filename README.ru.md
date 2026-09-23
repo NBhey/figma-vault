@@ -2,11 +2,32 @@
 
 [English](README.md) · **Русский**
 
-Локальное хранилище макетов Figma для AI-агентов.
+[![npm](https://img.shields.io/npm/v/figma-vault)](https://www.npmjs.com/package/figma-vault)
+[![license: MIT](https://img.shields.io/npm/l/figma-vault)](LICENSE)
+[![node](https://img.shields.io/node/v/figma-vault)](package.json)
 
-Макет выгружается из Figma **один раз**, нормализуется и ложится на диск. После этого
-Claude Code, Codex и любой другой MCP-клиент читают его сколько угодно — без обращений
-к Figma, без токена и без лимитов.
+**Макет выгружается из Figma один раз. Дальше Claude Code, Codex и любой MCP-агент читают
+его сколько угодно: без сети, без токена Figma и без лимитов.**
+
+<p align="center">
+  <img src="docs/media/demo.svg" alt="figma-vault init, demo и check в терминале: цепочка работает без токена Figma" width="860">
+</p>
+
+- **3 запроса к Figma на экран**, один раз при выгрузке. Дальше ноль, сколько бы раз
+  агент ни заглядывал в макет.
+- **Иконки бесплатны.** На реальном экране их было 141, и лишних запросов они не
+  потребовали.
+- **Хранилище коммитится, и команде не нужен доступ к Figma.** Ни лицензии, ни токена.
+
+Попробовать за 30 секунд, токен Figma для этого не нужен:
+
+```bash
+npm i -g figma-vault
+figma-vault init && figma-vault demo && figma-vault check
+```
+
+Как это устроено: при выгрузке макет нормализуется и ложится на диск, а агент читает его
+через MCP.
 
 ```
 один разработчик:  figma-vault add <ссылка>  →  хранилище  →  git commit

@@ -1,0 +1,54 @@
+<!doctype html>
+<!-- Исходник docs/media/social-preview.png (1280x640, GitHub → Settings → Social preview).
+     Пересборка: chrome --headless=new --hide-scrollbars --window-size=1280,640
+       --screenshot=docs/media/social-preview.png file:///<путь>/docs/media/social-preview.html -->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { width: 1280px; height: 640px; }
+  body {
+    background: #0d1117;
+    color: #e6edf3;
+    font-family: "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif;
+    padding: 72px 88px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+  .glow {
+    position: absolute; right: -180px; top: -220px; width: 720px; height: 720px;
+    background: radial-gradient(circle, rgba(162, 89, 255, .28), rgba(162, 89, 255, 0) 65%);
+  }
+  .name {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 30px; color: #7ee787; font-weight: 600; letter-spacing: -.01em;
+  }
+  h1 {
+    margin-top: 28px; font-size: 68px; line-height: 1.08; font-weight: 700;
+    letter-spacing: -.025em; max-width: 1000px;
+  }
+  h1 em { font-style: normal; color: #a259ff; }
+  .sub { margin-top: 22px; font-size: 28px; color: #8b949e; max-width: 980px; line-height: 1.35; }
+  .facts { margin-top: auto; display: flex; gap: 20px; }
+  .fact {
+    border: 1px solid #30363d; border-radius: 14px; padding: 18px 24px; background: #161b22;
+    font-size: 21px; color: #8b949e; line-height: 1.3;
+  }
+  .fact b { display: block; font-size: 36px; color: #e6edf3; font-weight: 700; }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="name">$ figma-vault</div>
+  <h1>Pull a Figma design <em>once</em>.<br>Let AI agents read it forever.</h1>
+  <p class="sub">A local MCP vault for Claude Code, Codex and other agents — offline, no token for readers, no rate limits.</p>
+  <div class="facts">
+    <div class="fact"><b>3</b>Figma requests per screen</div>
+    <div class="fact"><b>0</b>requests for icons</div>
+    <div class="fact"><b>0</b>requests after the pull</div>
+  </div>
+</body>
+</html>

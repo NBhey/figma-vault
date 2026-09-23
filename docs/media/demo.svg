@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="403" viewBox="0 0 920 403" role="img" aria-label="figma-vault init, demo and check in a terminal: the chain works without a Figma token">
+<style>
+text{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;font-size:14px;fill:#c9d1d9}
+text[style],tspan[style]{animation-duration:12.19s;animation-iteration-count:infinite;animation-timing-function:linear;opacity:0}
+.p{fill:#7ee787;font-weight:600}.c{fill:#e6edf3;font-weight:600}.dim{fill:#8b949e}
+.ok{fill:#3fb950;font-weight:600}.warn{fill:#d29922;font-weight:600}.strong{fill:#e6edf3;font-weight:600}
+.title{animation:none;opacity:1;fill:#8b949e;font-size:12px}
+@media (prefers-reduced-motion:reduce){text[style],tspan[style]{animation:none;opacity:1}}
+@keyframes a0{0%,2.460%{opacity:0}2.468%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a1{0%,4.920%{opacity:0}4.928%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a2{0%,5.371%{opacity:0}5.379%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a3{0%,5.822%{opacity:0}5.830%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a4{0%,6.273%{opacity:0}6.281%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a5{0%,6.724%{opacity:0}6.732%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a6{0%,7.175%{opacity:0}7.183%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a7{0%,7.626%{opacity:0}7.634%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a8{0%,8.077%{opacity:0}8.085%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a9{0%,8.528%{opacity:0}8.536%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a10{0%,8.979%{opacity:0}8.987%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a11{0%,9.430%{opacity:0}9.438%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a12{0%,9.881%{opacity:0}9.889%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a13{0%,10.332%{opacity:0}10.340%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a14{0%,10.783%{opacity:0}10.791%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a15{0%,11.234%{opacity:0}11.242%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a16{0%,11.685%{opacity:0}11.693%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a17{0%,15.826%{opacity:0}15.834%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a18{0%,16.974%{opacity:0}16.982%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a19{0%,18.122%{opacity:0}18.130%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a20{0%,19.680%{opacity:0}19.688%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a21{0%,22.140%{opacity:0}22.148%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a22{0%,22.591%{opacity:0}22.599%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a23{0%,23.042%{opacity:0}23.050%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a24{0%,23.493%{opacity:0}23.501%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a25{0%,23.944%{opacity:0}23.952%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a26{0%,24.395%{opacity:0}24.403%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a27{0%,24.846%{opacity:0}24.854%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a28{0%,25.297%{opacity:0}25.305%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a29{0%,25.748%{opacity:0}25.756%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a30{0%,26.199%{opacity:0}26.207%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a31{0%,26.650%{opacity:0}26.658%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a32{0%,27.101%{opacity:0}27.109%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a33{0%,27.552%{opacity:0}27.560%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a34{0%,28.003%{opacity:0}28.011%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a35{0%,28.454%{opacity:0}28.462%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a36{0%,28.905%{opacity:0}28.913%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a37{0%,33.046%{opacity:0}33.055%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a38{0%,34.604%{opacity:0}34.613%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a39{0%,37.064%{opacity:0}37.073%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a40{0%,37.515%{opacity:0}37.524%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a41{0%,37.966%{opacity:0}37.975%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a42{0%,38.417%{opacity:0}38.426%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a43{0%,38.868%{opacity:0}38.877%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a44{0%,39.319%{opacity:0}39.328%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a45{0%,39.770%{opacity:0}39.779%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a46{0%,40.221%{opacity:0}40.230%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a47{0%,40.672%{opacity:0}40.681%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a48{0%,41.123%{opacity:0}41.132%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a49{0%,41.574%{opacity:0}41.583%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a50{0%,42.025%{opacity:0}42.034%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a51{0%,42.476%{opacity:0}42.485%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a52{0%,42.927%{opacity:0}42.936%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a53{0%,43.378%{opacity:0}43.387%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a54{0%,43.829%{opacity:0}43.838%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a55{0%,44.280%{opacity:0}44.289%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a56{0%,48.421%{opacity:0}48.430%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a57{0%,49.569%{opacity:0}49.578%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a58{0%,50.718%{opacity:0}50.726%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a59{0%,51.866%{opacity:0}51.874%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a60{0%,53.014%{opacity:0}53.022%,95.080%{opacity:1}100%{opacity:0}}
+@keyframes a61{0%,57.032%{opacity:0}57.040%,95.080%{opacity:1}100%{opacity:0}}
+</style>
+<rect width="920" height="403" rx="10" fill="#0d1117"/>
+<rect x="0.5" y="0.5" width="919" height="402" rx="10" fill="none" stroke="#30363d"/>
+<circle cx="22" cy="20" r="6" fill="#ff5f57"/><circle cx="42" cy="20" r="6" fill="#febc2e"/><circle cx="62" cy="20" r="6" fill="#28c840"/>
+<text class="title" x="460" y="24" text-anchor="middle">no Figma token needed</text>
+<line x1="0" y1="38" x2="920" y2="38" stroke="#30363d"/>
+<text x="24" y="70" xml:space="preserve"><tspan class="p" style="animation-name:a0">$ </tspan><tspan class="c" style="animation-name:a1">f</tspan><tspan class="c" style="animation-name:a2">i</tspan><tspan class="c" style="animation-name:a3">g</tspan><tspan class="c" style="animation-name:a4">m</tspan><tspan class="c" style="animation-name:a5">a</tspan><tspan class="c" style="animation-name:a6">-</tspan><tspan class="c" style="animation-name:a7">v</tspan><tspan class="c" style="animation-name:a8">a</tspan><tspan class="c" style="animation-name:a9">u</tspan><tspan class="c" style="animation-name:a10">l</tspan><tspan class="c" style="animation-name:a11">t</tspan><tspan class="c" style="animation-name:a12"> </tspan><tspan class="c" style="animation-name:a13">i</tspan><tspan class="c" style="animation-name:a14">n</tspan><tspan class="c" style="animation-name:a15">i</tspan><tspan class="c" style="animation-name:a16">t</tspan></text>
+<text x="24" y="93" xml:space="preserve" style="animation-name:a17"><tspan class="dim">Vault:          .figma-vault/</tspan></text>
+<text x="24" y="116" xml:space="preserve" style="animation-name:a18"><tspan class="dim">.mcp.json:      entry added (server figma-vault)</tspan></text>
+<text x="24" y="139" xml:space="preserve" style="animation-name:a19"><tspan class="dim">.claude/commands/figma.md: created</tspan></text>
+<text x="24" y="170" xml:space="preserve"><tspan class="p" style="animation-name:a20">$ </tspan><tspan class="c" style="animation-name:a21">f</tspan><tspan class="c" style="animation-name:a22">i</tspan><tspan class="c" style="animation-name:a23">g</tspan><tspan class="c" style="animation-name:a24">m</tspan><tspan class="c" style="animation-name:a25">a</tspan><tspan class="c" style="animation-name:a26">-</tspan><tspan class="c" style="animation-name:a27">v</tspan><tspan class="c" style="animation-name:a28">a</tspan><tspan class="c" style="animation-name:a29">u</tspan><tspan class="c" style="animation-name:a30">l</tspan><tspan class="c" style="animation-name:a31">t</tspan><tspan class="c" style="animation-name:a32"> </tspan><tspan class="c" style="animation-name:a33">d</tspan><tspan class="c" style="animation-name:a34">e</tspan><tspan class="c" style="animation-name:a35">m</tspan><tspan class="c" style="animation-name:a36">o</tspan></text>
+<text x="24" y="193" xml:space="preserve" style="animation-name:a37"><tspan class="dim">Design copied: EXAMPLE1234_1_1</tspan></text>
+<text x="24" y="224" xml:space="preserve"><tspan class="p" style="animation-name:a38">$ </tspan><tspan class="c" style="animation-name:a39">f</tspan><tspan class="c" style="animation-name:a40">i</tspan><tspan class="c" style="animation-name:a41">g</tspan><tspan class="c" style="animation-name:a42">m</tspan><tspan class="c" style="animation-name:a43">a</tspan><tspan class="c" style="animation-name:a44">-</tspan><tspan class="c" style="animation-name:a45">v</tspan><tspan class="c" style="animation-name:a46">a</tspan><tspan class="c" style="animation-name:a47">u</tspan><tspan class="c" style="animation-name:a48">l</tspan><tspan class="c" style="animation-name:a49">t</tspan><tspan class="c" style="animation-name:a50"> </tspan><tspan class="c" style="animation-name:a51">c</tspan><tspan class="c" style="animation-name:a52">h</tspan><tspan class="c" style="animation-name:a53">e</tspan><tspan class="c" style="animation-name:a54">c</tspan><tspan class="c" style="animation-name:a55">k</tspan></text>
+<text x="24" y="247" xml:space="preserve" style="animation-name:a56"><tspan class="ok">[ OK ]</tspan><tspan class="dim"> .mcp.json — the figma-vault server is registered</tspan></text>
+<text x="24" y="270" xml:space="preserve" style="animation-name:a57"><tspan class="ok">[ OK ]</tspan><tspan class="dim"> Vault — .figma-vault/, designs: 1</tspan></text>
+<text x="24" y="293" xml:space="preserve" style="animation-name:a58"><tspan class="ok">[ OK ]</tspan><tspan class="dim"> Design EXAMPLE1234_1_1 — nodes: 29</tspan></text>
+<text x="24" y="316" xml:space="preserve" style="animation-name:a59"><tspan class="ok">[ OK ]</tspan><tspan class="dim"> MCP server — tools: 6 (vault_list, vault_get_doc, vault_get_node, …)</tspan></text>
+<text x="24" y="339" xml:space="preserve" style="animation-name:a60"><tspan class="warn">[WARN]</tspan><tspan class="dim"> FIGMA_TOKEN — not set — reading designs from the vault works</tspan></text>
+<text x="24" y="370" xml:space="preserve" style="animation-name:a61"><tspan class="strong">The chain works: an agent will read the designs from the vault without calling Figma.</tspan></text>
+</svg>
