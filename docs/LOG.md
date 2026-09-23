@@ -1313,3 +1313,30 @@ package.json и демо-vault — без тестов, `raw.json` и реаль
 
 `npm pack --dry-run` — те же 34 файла: `docs/` в пакет не входит. Картинка в README дана
 относительным путём; на странице npm она появится со следующей публикацией.
+
+---
+
+## claude — 2026-09-23T18:23Z
+
+**T25: подготовка 0.1.3 для официального MCP Registry** (registry.modelcontextprotocol.io),
+по просьбе человека. Публикации нет: `npm publish` и `mcp-publisher publish` за человеком.
+
+- `package.json`: `"mcpName": "io.github.NBhey/figma-vault"` — по этому полю реестр проверяет,
+  что npm-пакет наш; версия 0.1.3 (и в `package-lock.json` в обоих местах). Регистр логина
+  сохранён: в реестре так и пишут (`io.github.0Mattias/...`), схема допускает заглавные.
+- `server.json` в корне (схема 2025-12-11): npm-пакет `figma-vault`, stdio, позиционный
+  аргумент `mcp` — клиент запустит `npx figma-vault mcp`. Описание ≤100 символов (лимит схемы).
+  `mcp-publisher validate` — **valid**.
+- `src/cli/registry.test.ts`: `server.json` согласован с `package.json` — имя = `mcpName`, обе версии
+  = версии пакета. **При следующем подъёме версии правь и `server.json`**, иначе тест красный.
+- README: счётчик тестов 57 → 58.
+
+Проверка: `npm test` 58/58, typecheck, build. `npm pack` → `figma-vault-0.1.3.tgz`, 34 файла, 54.8 kB,
+`mcpName` внутри; из чистого каталога `init`, `demo`, `check` (exit 0). Тег `v0.1.3` аннотированный.
+
+codex, если будет ход — независимая проверка приветствуется (тесты, `npm pack --dry-run`,
+`server.json` против package.json). Замечания — в LOG, тег не двигать без согласования.
+
+Порядок для человека: `git push --follow-tags` → `npm publish` → `mcp-publisher login github` →
+`mcp-publisher publish`. Реестр проверяет `mcpName` в уже опубликованном пакете, поэтому
+npm — строго раньше реестра.

@@ -30,7 +30,7 @@
 | T22 | Английский по умолчанию в CLI и MCP: вывод, ошибки, подсказки, шаблон `/figma`, метаданные `tools/list` | `src/cli/**`, `src/mcp/**` | claude | 2026-09-23T06:26Z | done |
 | T23 | Подготовка 0.1.2 без публикации: версия в package.json и lock, README про английский CLI/MCP | корень, `README*.md` | claude | 2026-09-23T06:39Z | done |
 | T24 | Витрина репозитория: анимация терминала и первый экран README, картинка для соцсетей, тексты для описания и тем GitHub | корень, `README*.md`, `docs/media/**` | claude | 2026-09-23T17:10Z | done |
-| T25 | Официальный MCP Registry: `mcpName`, `server.json`, тест согласованности версий, подготовка 0.1.3 без публикации | корень, `server.json`, `src/cli/registry.test.ts` | claude | 2026-09-23T18:21Z | wip |
+| T25 | Официальный MCP Registry: `mcpName`, `server.json`, тест согласованности версий, подготовка 0.1.3 без публикации | корень, `server.json`, `src/cli/registry.test.ts` | claude | 2026-09-23T18:21Z | done |
 
 ## Зависимости
 
