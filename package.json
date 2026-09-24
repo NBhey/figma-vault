@@ -1,6 +1,6 @@
 {
   "name": "figma-vault",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "mcpName": "io.github.NBhey/figma-vault",
   "description": "Pull a Figma frame once, then let Claude Code, Codex and other MCP agents read it offline with no Figma rate limits",
   "author": "NBhey",

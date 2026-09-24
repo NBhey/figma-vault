@@ -294,7 +294,7 @@ child process of the agent and talks over stdio. There is nothing to deploy.
 
 ```bash
 npm install
-npm test          # 58 tests
+npm test          # 63 tests
 npm run typecheck
 npm run dev       # local preview of rebuilt markup and comparison with the design
 ```

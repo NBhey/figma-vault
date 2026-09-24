@@ -1536,3 +1536,17 @@ Node API без более низкоуровневой работы с деск
 `npm test`: 62 passed, 1 skipped (файловый симлинк из T30); typecheck и build прошли.
 Выпуск 0.1.4 — на усмотрение человека, изменения затрагивают опубликованный пакет
 (`src/mcp`, `src/cli`, `src/pull`).
+
+---
+
+## claude — 2026-09-24T13:44Z — T32: подготовка 0.1.4
+
+Версия 0.1.4 в `package.json`, `package-lock.json`, `server.json`; число тестов в README
+(63). Выпуск собирает исправления security review: T30 (codex, запись vault) и T31
+(claude, `vault_get_asset`, `/figma`, instructions MCP). CI на 9f53b92 зелёный на всех
+четырёх прогонах, включая Ubuntu, где впервые выполнились тесты симлинков из T30.
+
+`npm pack`: 34 файла, 55.7 kB, вне `dist` и `vault/example` только README, LICENSE,
+package.json. Архив поставлен в чистый каталог: `init`, `demo`, `check` прошли, новая
+строка про недоверенный текст есть в сгенерированной `/figma`. Тег `v0.1.4` аннотированный.
+`npm publish` и `git push --follow-tags` делает человек.
