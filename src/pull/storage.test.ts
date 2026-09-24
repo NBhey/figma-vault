@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
@@ -95,5 +95,93 @@ test("writeSnapshot refuses generated artifact paths outside the snapshot", asyn
     assert.match(result.warnings[0] ?? "", /escapes snapshot directory/);
   } finally {
     await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("writeSnapshot rejects a document id containing path separators", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-test-"));
+  try {
+    const hostile = structuredClone(document);
+    hostile.source.fileKey = "../escape";
+    await assert.rejects(
+      writeSnapshot({ vaultDir, document: hostile, raw, artifacts: [] }),
+      /Invalid document id/,
+    );
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("writeSnapshot refuses a document directory linked outside the vault", async (t) => {
+  const base = await mkdtemp(path.join(os.tmpdir(), "figma-vault-link-test-"));
+  try {
+    const vaultDir = path.join(base, "vault");
+    const outside = path.join(base, "outside");
+    await mkdir(vaultDir);
+    await mkdir(outside);
+    await writeFile(path.join(outside, "doc.json"), "keep");
+    try {
+      await symlink(outside, path.join(vaultDir, "file_1_2"), "junction");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EPERM") return t.skip("symlinks unavailable");
+      throw error;
+    }
+
+    await assert.rejects(
+      writeSnapshot({ vaultDir, document, raw, artifacts: [] }),
+      /Document path leaves the vault/,
+    );
+    assert.equal(await readFile(path.join(outside, "doc.json"), "utf8"), "keep");
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("writeSnapshot refuses an assets directory linked outside the document", async (t) => {
+  const base = await mkdtemp(path.join(os.tmpdir(), "figma-vault-link-test-"));
+  try {
+    const vaultDir = path.join(base, "vault");
+    const docDir = path.join(vaultDir, "file_1_2");
+    const outside = path.join(base, "outside");
+    await mkdir(docDir, { recursive: true });
+    await mkdir(outside);
+    try {
+      await symlink(outside, path.join(docDir, "assets"), "junction");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EPERM") return t.skip("symlinks unavailable");
+      throw error;
+    }
+
+    await assert.rejects(
+      writeSnapshot({ vaultDir, document, raw, artifacts: [] }),
+      /Directory path leaves the vault/,
+    );
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
+});
+
+test("writeSnapshot refuses an existing document file symlink", async (t) => {
+  const base = await mkdtemp(path.join(os.tmpdir(), "figma-vault-link-test-"));
+  try {
+    const vaultDir = path.join(base, "vault");
+    const docDir = path.join(vaultDir, "file_1_2");
+    const outside = path.join(base, "outside.json");
+    await mkdir(path.join(docDir, "assets"), { recursive: true });
+    await writeFile(outside, "keep");
+    try {
+      await symlink(outside, path.join(docDir, "doc.json"), "file");
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === "EPERM") return t.skip("symlinks unavailable");
+      throw error;
+    }
+
+    await assert.rejects(
+      writeSnapshot({ vaultDir, document, raw, artifacts: [] }),
+      /Refusing to write through a symbolic link/,
+    );
+    assert.equal(await readFile(outside, "utf8"), "keep");
+  } finally {
+    await rm(base, { recursive: true, force: true });
   }
 });
