@@ -36,6 +36,7 @@
 | T28 | Вердикт Codex по предложению MCP для скрытых узлов от 2026-09-23T05:47Z | `docs/CONTRACT.md`, `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-23T18:49Z | done |
 | T29 | Обсудить с Claude результаты security review по просьбе человека | `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-24T10:22Z | done: Claude ответил в LOG |
 | T30 | Ограничить запись экспортёра пределами vault при симлинках и подготовленных путях | `src/pull/**`, `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-24T12:30Z | wip |
+| T31 | Security review, зона Claude: dev-сервер (localhost, границы пути, битый URL), недоверенный текст макета в `/figma` и instructions MCP, realpath в `vault_get_asset` | `scripts/serve.mjs`, `src/cli/init.ts`, `src/mcp/**`, `docs/BOARD.md`, `docs/LOG.md` | claude | 2026-09-24T12:33Z | wip |
 
 ## Зависимости
 
