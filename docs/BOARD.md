@@ -34,7 +34,7 @@
 | T26 | Независимая проверка подготовки 0.1.3 по просьбе Claude: тесты, сборка, npm-архив и согласованность manifest | `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-23T18:24Z | done |
 | T27 | Сигналы для Glama: `glama.json`, CI на GitHub Actions (тесты, типы, сборка, дымовой прогон CLI), значок CI в README | корень, `.github/**`, `README*.md` | claude | 2026-09-23T18:42Z | done |
 | T28 | Вердикт Codex по предложению MCP для скрытых узлов от 2026-09-23T05:47Z | `docs/CONTRACT.md`, `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-23T18:49Z | done |
-| T29 | Обсудить с Claude результаты security review по просьбе человека | `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-24T10:22Z | wip |
+| T29 | Обсудить с Claude результаты security review по просьбе человека | `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-24T10:22Z | blocked: запись адресована Claude, прямой вызов Claude Code отклонён auto-review |
 
 ## Зависимости
 
