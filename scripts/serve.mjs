@@ -222,8 +222,13 @@ function comparePage(page) {
 }
 
 const server = createServer(async (req, res) => {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
-  const pathname = decodeURIComponent(url.pathname);
+  let pathname;
+  try {
+    pathname = decodeURIComponent(new URL(req.url ?? "/", "http://localhost").pathname);
+  } catch {
+    // Битый %-код бросает исключение, а необработанный reject в обработчике роняет процесс.
+    return send(res, 400, "text/plain", "bad request");
+  }
   const list = await pages();
 
   if (pathname === "/") return send(res, 200, types[".html"], indexPage(list));
@@ -245,13 +250,18 @@ const server = createServer(async (req, res) => {
     try {
       return send(res, 200, types[".png"], await readFile(file));
     } catch {
-      return send(res, 404, types[".html"], `screenshot.png не найден: ${escape(file)}`);
+      return send(res, 404, types[".html"], `screenshot.png не найден для ${escape(name)}`);
     }
   }
 
   const rel = pathname.replace(/^\/+/, "");
   const file = path.resolve(root, rel.endsWith("/") || rel === "" ? `${rel}index.html` : rel);
-  if (!file.startsWith(root)) return send(res, 403, "text/plain", "forbidden");
+  // Не startsWith: он пропускает соседей вроде restored-secret, а на Windows до них
+  // добираются через %5c.
+  const inside = path.relative(root, file);
+  if (inside.startsWith("..") || path.isAbsolute(inside)) {
+    return send(res, 403, "text/plain", "forbidden");
+  }
 
   try {
     const info = await stat(file);
@@ -263,7 +273,8 @@ const server = createServer(async (req, res) => {
   }
 });
 
-server.listen(port, () => {
+// Только localhost: сервер отдаёт файлы репозитория, в локальную сеть ему незачем.
+server.listen(port, "127.0.0.1", () => {
   console.log("");
   console.log("  Список макетов  http://localhost:" + port + "/");
   console.log("");

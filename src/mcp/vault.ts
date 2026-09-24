@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readFile, realpath } from "node:fs/promises";
 import path from "node:path";
 
 import { validateVaultDocument, validateVaultIndex, VaultValidationError } from "../shared/index.js";
@@ -37,9 +37,16 @@ function isEnoent(error: unknown): boolean {
 }
 
 function assertDocId(docId: string): void {
-  if (!DOC_ID_RE.test(docId)) {
+  // "." и ".." проходят регулярку, но указывают на сам vault и каталог над ним.
+  if (!DOC_ID_RE.test(docId) || /^\.+$/.test(docId)) {
     throw new VaultError(`Invalid docId: ${JSON.stringify(docId)}`);
   }
+}
+
+/** Путь `target` лежит внутри `dir` и не совпадает с ним. */
+function isInside(dir: string, target: string): boolean {
+  const relative = path.relative(dir, target);
+  return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
 }
 
 function cloneNode(node: VaultNode): VaultNode {
@@ -237,7 +244,7 @@ export class Vault {
     const dir = this.docDir(docId);
     const target = path.resolve(dir, assetPath);
     const relative = path.relative(dir, target);
-    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+    if (!isInside(dir, target)) {
       throw new VaultError(`Path leaves the document directory: ${assetPath}`);
     }
     const mimeType = ASSET_MIME[path.extname(target).toLowerCase()];
@@ -248,7 +255,12 @@ export class Vault {
     }
     let buffer: Buffer;
     try {
-      buffer = await readFile(target);
+      // Лексическая проверка выше не видит симлинков: сверяем настоящие пути.
+      const [realDir, realTarget] = await Promise.all([realpath(dir), realpath(target)]);
+      if (!isInside(realDir, realTarget)) {
+        throw new VaultError(`Path leaves the document directory: ${assetPath}`);
+      }
+      buffer = await readFile(realTarget);
     } catch (error) {
       if (isEnoent(error)) {
         throw new VaultError(`Asset ${assetPath} not found in ${docId}.`);

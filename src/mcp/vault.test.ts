@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { test } from "node:test";
@@ -175,6 +176,26 @@ test("vault не выпускает читателя за пределы док�
   await assert.rejects(() => vault.getAsset(DOC, "doc.json"), VaultError);
   await assert.rejects(() => vault.getDoc("../../etc"), VaultError);
   await assert.rejects(() => vault.getDoc("нет-такого-дока"), VaultError);
+});
+
+test("vault не выпускает читателя через симлинк и docId из точек", async () => {
+  const base = await mkdtemp(path.join(tmpdir(), "figma-vault-"));
+  try {
+    const outside = path.join(base, "outside");
+    await mkdir(outside);
+    await writeFile(path.join(outside, "secret.svg"), "<svg>secret</svg>");
+    const docDir = path.join(base, "vault", "DOC_1_1");
+    await mkdir(docDir, { recursive: true });
+    // junction работает на Windows без прав администратора, на остальных — обычный симлинк.
+    await symlink(outside, path.join(docDir, "assets"), "junction");
+
+    const trap = new Vault(path.join(base, "vault"));
+    await assert.rejects(() => trap.getAsset("DOC_1_1", "assets/secret.svg"), VaultError);
+    await assert.rejects(() => trap.getAsset("..", "outside/secret.svg"), VaultError);
+    await assert.rejects(() => trap.getAsset(".", "DOC_1_1/assets/secret.svg"), VaultError);
+  } finally {
+    await rm(base, { recursive: true, force: true });
+  }
 });
 
 test("битый doc.json отбивается валидатором из src/shared, а не доходит до агента", async () => {
