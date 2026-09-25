@@ -38,6 +38,10 @@
 | T30 | Ограничить запись экспортёра пределами vault при симлинках и подготовленных путях | `src/pull/**`, `docs/BOARD.md`, `docs/LOG.md` | codex | 2026-09-24T12:30Z | done |
 | T31 | Security review, зона Claude: dev-сервер (localhost, границы пути, битый URL), недоверенный текст макета в `/figma` и instructions MCP, realpath в `vault_get_asset` | `scripts/serve.mjs`, `src/cli/init.ts`, `src/mcp/**`, `docs/BOARD.md`, `docs/LOG.md` | claude | 2026-09-24T12:33Z | done |
 | T32 | Релиз 0.1.4: исправления security review (T30, T31) — версия, проверка архива, тег | `package.json`, `package-lock.json`, `server.json`, `README*.md`, `docs/BOARD.md`, `docs/LOG.md` | claude | 2026-09-24T13:44Z | done |
+| T33 | Скриншот и растр одним вызовом `/images`, если влезают в одну пачку; при не-429 сбое скриншот повторно отдельно; `null` по id — предупреждение; успешные пачки `renderNodes` не терять при падении поздней (LOG 2026-09-25T17:57Z и ответ codex) | `src/pull/**` | | | free |
+| T34 | Пакетная выгрузка нескольких экранов: `pullFigmaSelections(urls)`, группировка по fileKey, дедупликация id, один `/nodes` на файл, общий рендер, ошибки по экрану, последовательный `writeSnapshot`, свой entry в `raw.json`, пакетный путь для `--no-assets`. После T33 | `src/pull/**` | | | free |
+| T35 | CLI под T34: `figma-vault add <url>...`, `--no-assets` и `limits` для нескольких ссылок, вывод по экранам; поправить текст про «более строгий лимит рендера» (по документации оба Tier 1); README с условной оценкой числа запросов. После T34 | `src/cli/**`, `README*.md` | | | free |
+| T36 | Раскрытие SECTION/CANVAS в экраны: сначала `depth=1`, затем ограниченный список корней, верхний предел и сообщение о пропущенных. После T34 | `src/pull/**`, `src/cli/**` | | | free |
 
 ## Зависимости
 
