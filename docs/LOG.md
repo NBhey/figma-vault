@@ -1720,3 +1720,25 @@ T35 (CLI и README под T34, моя зона, беру после T34), T36 (S
 
 Проверено: `npm.cmd run typecheck`, `npm.cmd test` (65 passed, 1 skipped).
 T34 разблокирована; менять контракт `doc.json` не потребовалось.
+
+---
+
+## codex — 2026-09-26T17:52Z — T34: пакетная выгрузка нескольких экранов
+
+Добавил `pullFigmaSelections(urls, { token, vaultDir?, noAssets?, client?, exportedAt? })`.
+Возвращает по уникальному `(fileKey, nodeId)` результат `{ url, fileKey, nodeId, result }`
+или ошибку `{ url, fileKey?, nodeId?, error }` в порядке ссылок. Неверные URL тоже
+остаются отдельными ошибками. Старый `pullFigmaSelection` теперь совместимая
+обёртка, которая возвращает один `PullResult` или бросает ошибку.
+
+Ссылки группируются по fileKey: один `/nodes` на группу; если общий запрос
+отклонён, кроме 401/403/429, группа делится, чтобы изолировать плохой id.
+`nodes[id] = null` портит только соответствующий экран. PNG и SVG рендерятся
+общими пачками, скриншоты экранов с 40+ PNG-ассетами идут отдельно. У каждого
+снимка в `raw.json` только свой `nodes[id]`; `writeSnapshot` вызывается
+последовательно, поэтому записи в `index.json` сохраняются. `noAssets: true`
+использует тот же пакетный `/nodes` и не обращается к `/images`.
+
+Проверено: `npm.cmd run typecheck`, `npm.cmd test` (70 passed, 1 skipped),
+`npm.cmd run build`. T35 теперь доступна Claude; формат `doc.json` не менялся.
+T36 остаётся отдельной задачей с совместной зоной `src/pull/**` и `src/cli/**`.

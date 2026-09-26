@@ -143,12 +143,17 @@ export class FigmaClient {
   }
 
   async getNode(fileKey: string, nodeId: string): Promise<FigmaNodesResponse> {
-    const params = new URLSearchParams({ ids: nodeId, geometry: "paths" });
-    const response = await this.getJson<FigmaNodesResponse>(
-      `/files/${encodeURIComponent(fileKey)}/nodes?${params}`,
-    );
+    const response = await this.getNodes(fileKey, [nodeId]);
     if (!response.nodes?.[nodeId]) throw new FigmaApiError(`Node ${nodeId} was not found in file ${fileKey}`, 404);
     return response;
+  }
+
+  async getNodes(fileKey: string, nodeIds: string[]): Promise<FigmaNodesResponse> {
+    if (nodeIds.length === 0) throw new Error("At least one node id is required");
+    const params = new URLSearchParams({ ids: nodeIds.join(","), geometry: "paths" });
+    return this.getJson<FigmaNodesResponse>(
+      `/files/${encodeURIComponent(fileKey)}/nodes?${params}`,
+    );
   }
 
   async renderNodes(
