@@ -68,14 +68,74 @@ test("pull keeps structure and local SVGs when optional Figma renders stay rate-
 
     assert.equal(result.nodeCount, 3);
     assert.equal(result.assetCount, 1);
-    assert.equal(calls.filter((url) => url.includes("/images/")).length, 2);
-    assert.ok(result.warnings.some((warning) => warning.includes("Screenshot unavailable")));
-    assert.ok(result.warnings.some((warning) => warning.includes("Raster assets unavailable")));
+    assert.equal(calls.filter((url) => url.includes("/images/")).length, 1);
+    assert.ok(result.warnings.some((warning) => warning.includes("PNG renders unavailable")));
     assert.match(
       await readFile(path.join(result.directory, "assets/1_3.svg"), "utf8"),
       /<svg/,
     );
     await assert.rejects(access(path.join(result.directory, "assets/1_4.png")));
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("pull renders screenshot and raster together, reporting null image URLs", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-pull-"));
+  const imageCalls: URL[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.includes("/files/")) return Response.json(response);
+    if (url.pathname.includes("/images/")) {
+      imageCalls.push(url);
+      return Response.json({ images: {
+        "1:2": "data:application/octet-stream;base64,c2NyZWVuc2hvdA==",
+        "1:4": null,
+      } });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+
+  try {
+    const result = await pullFigmaSelection(
+      "https://figma.com/design/file-key/Example?node-id=1-2",
+      { token: "secret", vaultDir, client },
+    );
+    assert.equal(imageCalls.length, 1);
+    assert.equal(imageCalls[0]!.searchParams.get("ids"), "1:2,1:4");
+    assert.equal(imageCalls[0]!.searchParams.get("scale"), "2");
+    assert.equal(await readFile(path.join(result.directory, "screenshot.png"), "utf8"), "screenshot");
+    assert.ok(result.warnings.some((warning) => warning.includes("did not render PNG asset for 1:4")));
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("pull retries only the screenshot after a non-rate-limit combined render failure", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-pull-"));
+  const imageCalls: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    if (url.pathname.includes("/files/")) return Response.json(response);
+    if (url.pathname.includes("/images/")) {
+      const ids = url.searchParams.get("ids")!;
+      imageCalls.push(ids);
+      if (ids.includes(",")) return new Response("failed", { status: 500 });
+      return Response.json({ images: { "1:2": "data:application/octet-stream;base64,c2NyZWVuc2hvdA==" } });
+    }
+    throw new Error(`Unexpected request: ${url}`);
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+
+  try {
+    const result = await pullFigmaSelection(
+      "https://figma.com/design/file-key/Example?node-id=1-2",
+      { token: "secret", vaultDir, client },
+    );
+    assert.deepEqual(imageCalls, ["1:2,1:4", "1:2"]);
+    assert.equal(await readFile(path.join(result.directory, "screenshot.png"), "utf8"), "screenshot");
+    assert.ok(result.warnings.some((warning) => warning.includes("PNG renders unavailable")));
   } finally {
     await rm(vaultDir, { recursive: true, force: true });
   }

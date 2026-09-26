@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { FigmaApiError, FigmaClient } from "./client.js";
+import { FigmaApiError, FigmaClient, FigmaRenderError } from "./client.js";
 
 test("FigmaClient authenticates and requests a selected node with vector geometry", async () => {
   const calls: Array<{ url: string; init?: RequestInit }> = [];
@@ -39,6 +39,33 @@ test("FigmaClient skips the images endpoint when there are no render targets", a
   const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
   assert.deepEqual(await client.renderNodes("file-key", [], "svg"), {});
   assert.equal(calls, 0);
+});
+
+test("FigmaClient preserves successful image chunks when a later chunk fails", async () => {
+  let calls = 0;
+  const fetcher: typeof fetch = async (input) => {
+    calls += 1;
+    const ids = new URL(String(input)).searchParams.get("ids")!.split(",");
+    if (calls === 2) return new Response("failed", { status: 500 });
+    const images: Record<string, string | null> = Object.fromEntries(
+      ids.slice(0, 39).map((id) => [id, `https://images.test/${id}`]),
+    );
+    images[ids[39]!] = null;
+    return Response.json({ images });
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  const ids = Array.from({ length: 41 }, (_, index) => `1:${index}`);
+
+  await assert.rejects(client.renderNodes("file-key", ids, "png"), (error: unknown) => {
+    assert.ok(error instanceof FigmaRenderError);
+    assert.equal(error.status, 500);
+    assert.equal(Object.keys(error.partialImages).length, 39);
+    assert.deepEqual(error.completedIds, ids.slice(0, 40));
+    assert.equal(error.partialImages["1:0"], "https://images.test/1:0");
+    assert.equal(error.partialImages["1:39"], undefined);
+    return true;
+  });
+  assert.equal(calls, 2);
 });
 
 test("FigmaClient waits for Retry-After and retries a 429 response", async () => {

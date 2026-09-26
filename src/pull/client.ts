@@ -54,6 +54,20 @@ export class FigmaApiError extends Error {
   }
 }
 
+export class FigmaRenderError extends Error {
+  readonly status?: number;
+
+  constructor(
+    cause: unknown,
+    readonly partialImages: Record<string, string>,
+    readonly completedIds: string[],
+  ) {
+    super(cause instanceof Error ? cause.message : String(cause), { cause });
+    this.name = "FigmaRenderError";
+    this.status = cause instanceof FigmaApiError ? cause.status : undefined;
+  }
+}
+
 export class FigmaClient {
   private readonly maxRetries: number;
   private readonly maxDelayMs: number;
@@ -144,6 +158,7 @@ export class FigmaClient {
     scale?: number,
   ): Promise<Record<string, string>> {
     const images: Record<string, string> = {};
+    const completedIds: string[] = [];
     for (let offset = 0; offset < nodeIds.length; offset += 40) {
       const ids = nodeIds.slice(offset, offset + 40);
       if (ids.length === 0) continue;
@@ -153,12 +168,17 @@ export class FigmaClient {
         params.set("svg_outline_text", "false");
         params.set("svg_include_node_id", "true");
       }
-      const response = await this.getJson<ImagesResponse>(
-        `/images/${encodeURIComponent(fileKey)}?${params}`,
-      );
-      if (response.err) throw new FigmaApiError(response.err);
-      for (const [id, url] of Object.entries(response.images ?? {})) {
-        if (url) images[id] = url;
+      try {
+        const response = await this.getJson<ImagesResponse>(
+          `/images/${encodeURIComponent(fileKey)}?${params}`,
+        );
+        if (response.err) throw new FigmaApiError(response.err);
+        for (const [id, url] of Object.entries(response.images ?? {})) {
+          if (url) images[id] = url;
+        }
+        completedIds.push(...ids);
+      } catch (error) {
+        throw new FigmaRenderError(error, images, completedIds);
       }
     }
     return images;
