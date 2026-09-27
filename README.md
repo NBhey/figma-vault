@@ -14,8 +14,8 @@ likes: offline, with no Figma token and no rate limits.**
   <img src="docs/media/demo.svg" alt="figma-vault init, demo and check in a terminal: the chain works without a Figma token" width="860">
 </p>
 
-- **3 Figma requests per screen**, spent once when you pull it. After that it's zero,
-  however many times the agent looks.
+- **Batch Figma requests once**, then zero requests however many times the agent looks.
+  Screens from one file share the structure read and image render batches.
 - **Icons cost nothing.** A real screen had 141 icons, and they took no extra requests.
 - **Commit the vault and the team needs no Figma access.** No licence, no token.
 
@@ -104,12 +104,18 @@ config or dependencies to the project.
 
 ```bash
 figma-vault add "https://figma.com/design/KEY/Project?node-id=127-4532"
+# Export several selections together; links from the same file share requests:
+figma-vault add "<frame link 1>" "<frame link 2>"
+# Keep the node trees if image rendering is unavailable:
+figma-vault add "<frame link 1>" "<frame link 2>" --no-assets
+# A SECTION/CANVAS link can expand into its frames (up to 20 by default):
+figma-vault add "<section link>" --expand --max-screens 20
 ```
 
 To get the link, right-click a frame in Figma and choose **Copy link to selection**.
 
 ```bash
-figma-vault limits "<link>"   # check your Figma rate limits BEFORE pulling
+figma-vault limits "<frame link 1>" "<frame link 2>" # probe access before pulling
 figma-vault list              # what has been pulled so far
 figma-vault check             # verify the whole chain works
 figma-vault demo              # add a demo design, no token needed
@@ -130,22 +136,26 @@ conventions.
 
 ### What a pull costs in Figma requests
 
-REST API limits depend on the token, the plan and the seat type, and you can't look them
-up in advance. Run `figma-vault limits "<link>"` before your first pull. It makes the same
-two requests a pull would and tells you whether the pull will go through.
+REST API limits depend on the token, plan and seat type. Both node reads and image renders
+are Tier 1 endpoints. `figma-vault limits "<link>" [more links...]` probes a shallow node
+read and screen renders per file. A successful probe cannot guarantee the full pull:
+asset renders can require additional requests.
 
-A full pull of one screen costs **three requests**. We measured this on a real design
-with 332 nodes:
+For a file with S selected screens and R unique raster assets, when each screen has fewer
+than 40 raster assets, a successful pull typically uses:
 
 | | requests |
 |---|---|
-| node tree (`/v1/files/:key/nodes`) | 1 |
-| frame screenshot (`/v1/images`) | 1 |
-| raster images (`/v1/images`, in batches of 40) | 1 per 40 images |
-| icons and vectors | **0** |
+| selected node trees (`/v1/files/:key/nodes`) | 1 per file |
+| screenshots and raster assets (`/v1/images`, batches of 40 IDs) | `ceil((S + R) / 40)` per file |
+| icons with local geometry | **0** |
 
-On that design, the 141 icons cost zero requests. **So the cost of a pull doesn't depend
-on how many icons the design has.** After the pull, the agent never calls Figma again.
+For example, two screens in one file with three unique raster assets take one node read
+and one image render if the five IDs fit in a batch. At 40 or more raster assets on one
+screen, screenshots are rendered separately. `--expand` first probes containers with
+`depth=1`, adding at least one node request per file. SVG fallback renders, failed
+requests and retries can add calls. On a real 332-node design, 141 icons needed no render calls.
+After the pull, the agent never calls Figma again.
 
 ## Check the result against the design
 
@@ -246,8 +256,8 @@ the network.
 
 This is an MVP. Here is what it can't do yet.
 
-- **Image-render limit.** Figma's `/v1/images` endpoint runs out sooner than tree
-  reads do, and the block can last for days. Icons no longer depend on it, but the frame
+- **Rate limits.** Node reads and image renders are both Tier 1. Either endpoint can return
+  429, and the block can last for days. Icons no longer depend on rendering, but the frame
   screenshot and raster images still do. The client retries up to three times,
   following `Retry-After`, and never sleeps for more than a minute. If Figma asks it to
   wait for days, the pull **keeps the node tree**, records the reason as a warning and
@@ -271,7 +281,7 @@ Results on a product screen with 332 nodes, 15 levels deep:
 | design texts present in the rebuilt markup | 41 of 41 |
 | icons | 15 of 15, 0 broken links |
 | placeholders needed | 1 (a raster avatar) |
-| Figma requests to pull | 3 |
+| Figma requests in the earlier measured pull | 3 (before combined rendering) |
 | `doc.json` against the contract | passes |
 
 **Not checked:** pixel-perfect match. We compare with Figma's reference render by eye,

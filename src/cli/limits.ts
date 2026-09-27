@@ -3,12 +3,10 @@ import { parseFigmaUrl } from "../pull/url.js";
 /**
  * Проверка лимитов до выгрузки.
  *
- * У Figma два разных эндпоинта с разными бюджетами: чтение структуры и рендер картинок.
- * Рендер выбивается заметно раньше и блокируется надолго. Лимиты считаются по токену
- * и зависят от тарифа и типа места, поэтому узнать заранее можно только пробой.
+ * Оба эндпоинта относятся к Tier 1. Доступный бюджет зависит от тарифа и типа места.
  *
- * Команда делает ровно два запроса — те же самые, что сделала бы выгрузка, — и говорит,
- * пройдёт ли она, вместо того чтобы упасть на середине.
+ * Команда делает пробное чтение узлов и рендер выбранных экранов по файлам.
+ * Ассеты и повторные попытки в этом прогнозе не учитываются.
  */
 
 const BASE = "https://api.figma.com/v1";
@@ -68,64 +66,61 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
   }
 }
 
-export async function runLimits(figmaUrl: string | undefined): Promise<void> {
-  if (!figmaUrl) {
+export async function runLimits(figmaUrls: string[]): Promise<void> {
+  if (figmaUrls.length === 0) {
     throw new Error(
-      'A link to a frame is required: figma-vault limits "https://figma.com/design/...?node-id=1-42"\n' +
-        "The check makes two requests — the same ones the export would make.",
+      'At least one frame link is required: figma-vault limits "https://figma.com/design/...?node-id=1-42" [more links...]',
     );
   }
   const token = process.env.FIGMA_TOKEN;
   if (!token) throw new Error("FIGMA_TOKEN is not set.");
-
-  const { fileKey, nodeId } = parseFigmaUrl(figmaUrl);
   const out = (line: string) => process.stdout.write(`${line}\n`);
-
-  const structure = await probe(
-    "Reading structure  /v1/files/:key/nodes",
-    `${BASE}/files/${encodeURIComponent(fileKey)}/nodes?ids=${encodeURIComponent(nodeId)}&depth=1`,
-    token,
-  );
-  const render = await probe(
-    "Rendering images   /v1/images/:key",
-    `${BASE}/images/${encodeURIComponent(fileKey)}?ids=${encodeURIComponent(nodeId)}&format=png`,
-    token,
-  );
-
-  out("");
-  for (const p of [structure, render]) {
-    const mark = p.ok ? " OK " : p.status === 429 ? "LIMIT" : "FAIL";
-    out(`[${mark}] ${p.label} — HTTP ${p.status || "no answer"}`);
-    if (p.retryAfter && p.retryAfter > 0) {
-      out(`         frees up in about ${humanDuration(p.retryAfter)}`);
+  const groups = new Map<string, string[]>();
+  for (const url of figmaUrls) {
+    try {
+      const { fileKey, nodeId } = parseFigmaUrl(url);
+      const ids = groups.get(fileKey) ?? [];
+      if (!ids.includes(nodeId)) ids.push(nodeId);
+      groups.set(fileKey, ids);
+    } catch (error) {
+      out(`[FAIL] ${url}: ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
     }
-    if (p.plan || p.kind) {
-      const bits = [p.plan ? `plan ${p.plan}` : null, p.kind ? `limit type ${p.kind}` : null]
-        .filter(Boolean)
-        .join(", ");
-      out(`         ${bits}`);
-    }
-    if (!p.ok && p.detail) out(`         ${p.detail}`);
   }
-
-  out("");
-  if (structure.ok && render.ok) {
-    out("The export will go through completely: structure, screenshot and images.");
-    out("Icons are built locally from geometry and do not spend the limit.");
-  } else if (structure.ok && !render.ok) {
-    out("The structure is available, image rendering is not.");
-    out("Export with the --no-assets flag: you get the tree, texts, spacing and colors,");
-    out("without the screenshot and raster images. Fetch them later with the same add without the flag.");
-    process.exitCode = 1;
-  } else if (structure.status === 403) {
-    out("No access to the file. Check that the token has the File content (read-only) scope");
-    out("and that the account owning the token has access to this file in Figma.");
-    process.exitCode = 1;
-  } else if (structure.status === 404) {
-    out("File or node not found. Check the link: it must contain node-id.");
-    process.exitCode = 1;
-  } else {
-    out("The export will not go through right now. See the statuses above.");
-    process.exitCode = 1;
+  for (const [fileKey, ids] of groups) {
+    out(`\nFile ${fileKey}: ${ids.length} unique screen(s) (${ids.join(", ")})`);
+    const structure = await probe(
+      "Reading structure  /v1/files/:key/nodes",
+      `${BASE}/files/${encodeURIComponent(fileKey)}/nodes?ids=${encodeURIComponent(ids.join(","))}&depth=1`,
+      token,
+    );
+    const renders: Probe[] = [];
+    for (let i = 0; i < ids.length; i += 40) {
+      const chunk = ids.slice(i, i + 40);
+      renders.push(await probe(
+        "Rendering screens /v1/images/:key",
+        `${BASE}/images/${encodeURIComponent(fileKey)}?ids=${encodeURIComponent(chunk.join(","))}&format=png`,
+        token,
+      ));
+    }
+    for (const p of [structure, ...renders]) {
+      const mark = p.ok ? " OK " : p.status === 429 ? "LIMIT" : "FAIL";
+      out(`[${mark}] ${p.label} — HTTP ${p.status || "no answer"}`);
+      if (p.retryAfter && p.retryAfter > 0) out(`         frees up in about ${humanDuration(p.retryAfter)}`);
+      if (p.plan || p.kind) {
+        out(`         ${[p.plan && `plan ${p.plan}`, p.kind && `limit type ${p.kind}`].filter(Boolean).join(", ")}`);
+      }
+      if (!p.ok && p.detail) out(`         ${p.detail}`);
+    }
+    if (structure.ok && renders.every((render) => render.ok)) {
+      out("Selected screens passed the probes. Asset renders may still need more requests.");
+    } else if (structure.ok && renders.some((render) => !render.ok)) {
+      out("Structure is available; try add --no-assets if image rendering is limited.");
+    } else if (structure.status === 403) {
+      out("Check token scope and access to this Figma file.");
+    } else if (structure.status === 404) {
+      out("File or node not found; check the selection links.");
+    }
+    if (!structure.ok || renders.some((render) => !render.ok)) process.exitCode = 1;
   }
 }

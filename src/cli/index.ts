@@ -11,9 +11,9 @@ const USAGE = `figma-vault — local storage of Figma designs for AI agents
 
   figma-vault init                 connect the vault to the current project
   figma-vault init --global        the same, but without a single file in the project repo
-  figma-vault add <figma-url>      export a design into the vault
+  figma-vault add <url>...         export one or more screens into the vault
   figma-vault demo                 put the demo design into the vault (no token needed)
-  figma-vault limits <figma-url>   check Figma rate limits before exporting (2 requests)
+  figma-vault limits <url>...      probe Figma access for selected screens
   figma-vault check                check that the whole chain works
   figma-vault list                 what is already exported
   figma-vault verify [docId] --snippet
@@ -23,7 +23,9 @@ const USAGE = `figma-vault — local storage of Figma designs for AI agents
   figma-vault mcp                  start the MCP server (called by an agent, not by a human)
 
 Options:
-  --no-assets                      structure only, no images (the render limit is stricter)
+  --no-assets                      add: structure only, no images
+  --expand                         add: export screens inside SECTION/CANVAS selections
+  --max-screens <n>                add --expand: at most n discovered screens (default 20)
   --no-command                     init: do not install the /figma slash command
   --vault <directory>              .figma-vault by default
   --tolerance <px>                 verify: geometry tolerance, 2 by default
@@ -38,6 +40,8 @@ interface ParsedArgs {
   positional: string[];
   vaultDir: string;
   noAssets: boolean;
+  expand: boolean;
+  maxScreens?: number;
   globalMode: boolean;
   noCommand: boolean;
   snippet: boolean;
@@ -58,6 +62,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
   if (first !== undefined && command === "add" && looksLikeFigmaUrl(first)) positional.push(first);
   let vaultDir = process.env.FIGMA_VAULT_DIR ?? DEFAULT_VAULT;
   let noAssets = false;
+  let expand = false;
+  let maxScreens: number | undefined;
   let globalMode = false;
   let noCommand = false;
   let snippet = false;
@@ -84,6 +90,14 @@ export function parseArgs(argv: string[]): ParsedArgs {
       globalMode = true;
     } else if (arg === "--no-assets") {
       noAssets = true;
+    } else if (arg === "--expand") {
+      expand = true;
+    } else if (arg === "--max-screens") {
+      const value = args.shift();
+      maxScreens = Number(value);
+      if (!value || !Number.isSafeInteger(maxScreens) || maxScreens < 1) {
+        throw new Error("--max-screens needs a positive integer");
+      }
     } else if (arg === "--help" || arg === "-h") {
       positional.push("--help");
     } else if (arg.startsWith("--")) {
@@ -93,7 +107,8 @@ export function parseArgs(argv: string[]): ParsedArgs {
     }
   }
 
-  return { command, positional, vaultDir, noAssets, globalMode, noCommand, snippet, snapshotFile, tolerance };
+  if (maxScreens !== undefined && !expand) throw new Error("--max-screens requires --expand");
+  return { command, positional, vaultDir, noAssets, expand, maxScreens, globalMode, noCommand, snippet, snapshotFile, tolerance };
 }
 
 async function list(vaultDir: string): Promise<void> {
@@ -141,7 +156,7 @@ function loadDotEnv(): void {
 
 async function main(): Promise<void> {
   loadDotEnv();
-  const { command, positional, vaultDir, noAssets, globalMode, noCommand, snippet, snapshotFile, tolerance } =
+  const { command, positional, vaultDir, noAssets, expand, maxScreens, globalMode, noCommand, snippet, snapshotFile, tolerance } =
     parseArgs(process.argv.slice(2));
 
   if (positional.includes("--help") || command === "help" || command === "--help") {
@@ -155,13 +170,13 @@ async function main(): Promise<void> {
       return;
     case "add":
     case "pull":
-      await runAdd(positional[0], { vaultDir, noAssets });
+      await runAdd(positional, { vaultDir, noAssets, expand, maxScreens });
       return;
     case "demo":
       await runDemo(process.cwd(), vaultDir);
       return;
     case "limits":
-      await runLimits(positional[0]);
+      await runLimits(positional);
       return;
     case "check":
       await runCheck(process.cwd(), vaultDir, process.argv[1] as string);
