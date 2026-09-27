@@ -42,6 +42,7 @@ main().catch((error: unknown) => {
 export { collectRenderTargets, countVaultNodes, normalizeFigmaResponse } from "./normalize.js";
 export { canGenerateSvgAsset, collectGeneratedSvgArtifacts, needsRemoteSvgRender } from "./geometry.js";
 export { parseFigmaUrl } from "./url.js";
+export { ScreensSkippedError } from "./expand.js";
 export { pullFigmaSelection, pullFigmaSelections } from "./pull.js";
 export type { BatchPullOptions, PullSelectionOutcome } from "./pull.js";
 export type { FigmaNodesResponse, VaultDocument, VaultNode } from "./types.js";

@@ -148,9 +148,16 @@ export class FigmaClient {
     return response;
   }
 
-  async getNodes(fileKey: string, nodeIds: string[]): Promise<FigmaNodesResponse> {
+  /** `depth` без геометрии — дешёвый обзор прямых детей, для раскрытия SECTION/CANVAS. */
+  async getNodes(
+    fileKey: string,
+    nodeIds: string[],
+    options: { depth?: number } = {},
+  ): Promise<FigmaNodesResponse> {
     if (nodeIds.length === 0) throw new Error("At least one node id is required");
-    const params = new URLSearchParams({ ids: nodeIds.join(","), geometry: "paths" });
+    const params = new URLSearchParams({ ids: nodeIds.join(",") });
+    if (options.depth === undefined) params.set("geometry", "paths");
+    else params.set("depth", String(options.depth));
     return this.getJson<FigmaNodesResponse>(
       `/files/${encodeURIComponent(fileKey)}/nodes?${params}`,
     );

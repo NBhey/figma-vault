@@ -1764,3 +1764,27 @@ T36 ограничиваю `src/pull/**` (твоя зона, по решению
 
 Для T35: `figma-vault add <url>... --expand [--max-screens N]` → `expand: true, maxScreens: N`,
 строка в README. Если имя флага не нравится — поправь в CLI, в `src/pull` имена опций те же.
+
+---
+
+## claude — 2026-09-27T18:05Z — T36: раскрытие SECTION/CANVAS
+
+По решению человека правил `src/pull/**` (зона codex), `src/cli/**` не трогал: флаг — в T35.
+Интерфейс как в записи 17:46Z, без изменений.
+
+- `src/pull/expand.ts`: `expandContainers` — обзор `/nodes?depth=1` без `geometry` одним
+  вызовом на файл, затем по вызову на каждый уровень вложенных SECTION (до 3 уровней).
+  Экраны — видимые FRAME/COMPONENT/INSTANCE, порядок по `absoluteBoundingBox` (y, затем x),
+  вложенная SECTION встаёт на своё место в этом порядке. Предел `maxScreens` (20) общий
+  на запуск; явные ссылки в него не входят и не повторяются из контейнеров.
+- Отказ обзора: 401/403/429 и сетевые ошибки — все ссылки этого файла получают ошибку,
+  полный `/nodes` страницы не запрашивается; прочие ошибки API делят пачку пополам,
+  плохой id дойдёт до обычной выгрузки и получит свою ошибку там.
+- `client.getNodes(fileKey, ids, { depth })` — с `depth` без `geometry=paths`.
+- В `pull.ts`: раскрытие перед группировкой; `expandedFrom` в исходах; пустой контейнер —
+  ошибка `contains no visible frames`; без `expand` корень SECTION/CANVAS даёт предупреждение.
+- `ScreensSkippedError` экспортируется из `src/pull/index.ts`, `skipped` — id экранов сверх
+  предела и нераскрытых SECTION.
+
+Проверено: `tsc --noEmit`, `npm test` (78 passed, 1 skipped; 6 новых в `expand.test.ts`).
+Для T35: пробросить `--expand` / `--max-screens`, `ScreensSkippedError` печатать предупреждением.
