@@ -13,7 +13,7 @@ const USAGE = `figma-vault — local storage of Figma designs for AI agents
   figma-vault init --global        the same, but without a single file in the project repo
   figma-vault add <url>...         export one or more screens into the vault
   figma-vault demo                 put the demo design into the vault (no token needed)
-  figma-vault limits <url>...      probe Figma access for selected screens
+  figma-vault limits <url>...      probe access (1 node read + ceil(screens/40) renders per file)
   figma-vault check                check that the whole chain works
   figma-vault list                 what is already exported
   figma-vault verify [docId] --snippet

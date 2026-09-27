@@ -128,7 +128,7 @@ the documentation only.
 After `init`, Claude Code has one command:
 
 ```
-/figma <frame link>
+/figma <frame link> [more frame links...]
 ```
 
 It pulls the design, reads it over MCP and builds the UI following the project's
@@ -137,9 +137,10 @@ conventions.
 ### What a pull costs in Figma requests
 
 REST API limits depend on the token, plan and seat type. Both node reads and image renders
-are Tier 1 endpoints. `figma-vault limits "<link>" [more links...]` probes a shallow node
-read and screen renders per file. A successful probe cannot guarantee the full pull:
-asset renders can require additional requests.
+are Tier 1 endpoints. `figma-vault limits "<link>" [more links...]` spends one shallow node
+read plus up to `ceil(S/40)` screen render requests per file. It skips rendering SECTION
+and CANVAS selections as whole images; their child screens are not probed. A successful
+probe cannot guarantee the full pull: asset renders can require additional requests.
 
 For a file with S selected screens and R unique raster assets, when each screen has fewer
 than 40 raster assets, a successful pull typically uses:

@@ -26,14 +26,16 @@ interface Probe {
   plan: string | null;
   kind: string | null;
   detail: string;
+  nodeTypes?: Record<string, string>;
 }
 
-async function probe(label: string, url: string, token: string): Promise<Probe> {
+async function probe(label: string, url: string, token: string, readNodes = false): Promise<Probe> {
   try {
     const response = await fetch(url, { headers: { "X-Figma-Token": token } });
     const retryAfterRaw = response.headers.get("retry-after");
     const retryAfter = retryAfterRaw ? Number(retryAfterRaw) : null;
     let detail = "";
+    let nodeTypes: Record<string, string> | undefined;
     if (!response.ok) {
       const body = await response.text();
       try {
@@ -43,6 +45,12 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
       } catch {
         detail = body.slice(0, 160);
       }
+    } else if (readNodes) {
+      const body = await response.json() as {
+        nodes?: Record<string, { document?: { type?: string } } | null>;
+      };
+      nodeTypes = Object.fromEntries(Object.entries(body.nodes ?? {})
+        .map(([id, entry]) => [id, entry?.document?.type ?? ""]));
     }
     return {
       label,
@@ -52,6 +60,7 @@ async function probe(label: string, url: string, token: string): Promise<Probe> 
       plan: response.headers.get("x-figma-plan-tier"),
       kind: response.headers.get("x-figma-rate-limit-type"),
       detail,
+      nodeTypes,
     };
   } catch (error) {
     return {
@@ -93,10 +102,14 @@ export async function runLimits(figmaUrls: string[]): Promise<void> {
       "Reading structure  /v1/files/:key/nodes",
       `${BASE}/files/${encodeURIComponent(fileKey)}/nodes?ids=${encodeURIComponent(ids.join(","))}&depth=1`,
       token,
+      true,
     );
+    const renderable = ids.filter((id) => ["FRAME", "COMPONENT", "INSTANCE"].includes(structure.nodeTypes?.[id] ?? ""));
+    const containers = ids.filter((id) => ["SECTION", "CANVAS"].includes(structure.nodeTypes?.[id] ?? ""));
+    const unknown = ids.filter((id) => structure.ok && !renderable.includes(id) && !containers.includes(id));
     const renders: Probe[] = [];
-    for (let i = 0; i < ids.length; i += 40) {
-      const chunk = ids.slice(i, i + 40);
+    for (let i = 0; i < renderable.length; i += 40) {
+      const chunk = renderable.slice(i, i + 40);
       renders.push(await probe(
         "Rendering screens /v1/images/:key",
         `${BASE}/images/${encodeURIComponent(fileKey)}?ids=${encodeURIComponent(chunk.join(","))}&format=png`,
@@ -112,8 +125,14 @@ export async function runLimits(figmaUrls: string[]): Promise<void> {
       }
       if (!p.ok && p.detail) out(`         ${p.detail}`);
     }
-    if (structure.ok && renders.every((render) => render.ok)) {
-      out("Selected screens passed the probes. Asset renders may still need more requests.");
+    if (containers.length > 0) {
+      out(`Skipped image probe for ${containers.length} SECTION/CANVAS selection(s): ${containers.join(", ")}.`);
+      out("Their child screens are not probed; add --expand exports them separately.");
+    }
+    if (unknown.length > 0) out(`Skipped image probe for unrecognized nodes: ${unknown.join(", ")}.`);
+    out(`Probe requests used: ${1 + renders.length} (Tier 1).`);
+    if (structure.ok && renderable.length > 0 && renders.every((render) => render.ok)) {
+      out("Probed screens passed. Asset renders may still need more requests.");
     } else if (structure.ok && renders.some((render) => !render.ok)) {
       out("Structure is available; try add --no-assets if image rendering is limited.");
     } else if (structure.status === 403) {

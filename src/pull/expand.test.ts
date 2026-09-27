@@ -151,6 +151,6 @@ test("without expand a section is exported as one document with a hint and no ou
     });
     assert.deepEqual(outlineCalls, []);
     assert.deepEqual(fullCalls, ["1:10"]);
-    assert.ok(outcome?.result?.warnings.some((warning) => /SECTION.*separate screens/.test(warning)));
+    assert.ok(outcome?.result?.warnings.some((warning) => /SECTION.*--expand.*separate screens/.test(warning)));
   });
 });

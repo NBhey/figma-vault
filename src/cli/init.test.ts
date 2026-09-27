@@ -44,7 +44,9 @@ test("init: вывод и созданные файлы английские, .m
     const command = await readFile(path.join(dir, ".claude", "commands", "figma.md"), "utf8");
     assert.doesNotMatch(command, /[А-Яа-я]/, command);
     assert.match(command, /^description: Export a Figma design and build it$/m);
-    assert.match(command, /^argument-hint: <link to a Figma frame>$/m);
+    assert.match(command, /^argument-hint: <Figma frame link> \[more frame links\.\.\.\]$/m);
+    assert.match(command, /add "<first URL>" "<second URL>"/);
+    assert.doesNotMatch(command, /add "\$ARGUMENTS"/);
     // Имена инструментов и вердиктов остаются как есть: их сверяет не человек, а код.
     for (const literal of ["vault_get_doc", "includeHidden: true", "FAIL", "INCOMPLETE"]) {
       assert.ok(command.includes(literal), `в шаблоне /figma нет ${literal}`);

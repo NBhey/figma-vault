@@ -174,3 +174,115 @@ test("batch pull groups by file and keeps invalid links in input order", async (
     await rm(vaultDir, { recursive: true, force: true });
   }
 });
+
+test("failed screenshot batch splits to isolate one heavy screen without raster assets", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-batch-"));
+  const imageCalls: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    const ids = url.searchParams.get("ids")!.split(",");
+    if (url.pathname.includes("/files/")) {
+      return Response.json({ name: "File", nodes: Object.fromEntries(ids.map((id) => [id, {
+        document: {
+          id, name: `Screen ${id}`, type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 }, children: [],
+        },
+      }])) });
+    }
+    imageCalls.push(ids.join(","));
+    if (ids.includes("1:3")) return new Response("render failed", { status: 500 });
+    return Response.json({ images: Object.fromEntries(ids.map((id) => [id, imageUrl])) });
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  try {
+    const outcomes = await pullFigmaSelections(
+      [link("1:2"), link("1:3"), link("1:4"), link("1:5")],
+      { token: "secret", vaultDir, client },
+    );
+    assert.deepEqual(imageCalls, [
+      "1:2,1:3,1:4,1:5", "1:2,1:3", "1:2", "1:3", "1:4,1:5",
+    ]);
+    for (const outcome of outcomes) {
+      assert.ok(outcome.result);
+      const screenshot = path.join(outcome.result.directory, "screenshot.png");
+      if (outcome.nodeId === "1:3") {
+        await assert.rejects(readFile(screenshot));
+        assert.ok(outcome.result.warnings.some((warning) => warning.includes("PNG renders unavailable")));
+      } else {
+        assert.equal(await readFile(screenshot, "utf8"), "image");
+      }
+    }
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("screenshot recovery stops after a 429 instead of probing more halves", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-batch-"));
+  const imageCalls: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    const ids = url.searchParams.get("ids")!.split(",");
+    if (url.pathname.includes("/files/")) {
+      return Response.json({ name: "File", nodes: Object.fromEntries(ids.map((id) => [id, {
+        document: {
+          id, name: `Screen ${id}`, type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 }, children: [],
+        },
+      }])) });
+    }
+    imageCalls.push(ids.join(","));
+    if (ids.length === 4) return new Response("server error", { status: 500 });
+    return new Response("limited", { status: 429, headers: { "retry-after": "999999" } });
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  try {
+    const outcomes = await pullFigmaSelections(
+      [link("1:2"), link("1:3"), link("1:4"), link("1:5")],
+      { token: "secret", vaultDir, client },
+    );
+    assert.deepEqual(imageCalls, ["1:2,1:3,1:4,1:5", "1:2,1:3"]);
+    assert.ok(outcomes.every((outcome) => outcome.result));
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("separate screenshot render also splits after a non-429 failure", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-batch-"));
+  const first = entry("1:2");
+  first.document.children = Array.from({ length: 40 }, (_, index) => ({
+    id: `2:${index}`, name: `Photo ${index}`, type: "RECTANGLE",
+    absoluteBoundingBox: { x: 0, y: 0, width: 10, height: 10 },
+    fills: [{ type: "IMAGE", imageRef: `photo-${index}` }],
+  }));
+  const imageCalls: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    const ids = url.searchParams.get("ids")!.split(",");
+    if (url.pathname.includes("/files/")) {
+      return Response.json({ name: "File", nodes: {
+        "1:2": first,
+        "1:3": entry("1:3"),
+      } });
+    }
+    imageCalls.push(ids.join(","));
+    if (ids.join(",") === "1:2,1:3") return new Response("render failed", { status: 500 });
+    return Response.json({ images: Object.fromEntries(ids.map((id) => [id, imageUrl])) });
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  try {
+    const outcomes = await pullFigmaSelections([link("1:2"), link("1:3")], {
+      token: "secret", vaultDir, client,
+    });
+    assert.ok(imageCalls.includes("1:2,1:3"));
+    assert.ok(imageCalls.includes("1:2"));
+    assert.ok(imageCalls.includes("1:3"));
+    for (const outcome of outcomes) {
+      assert.ok(outcome.result);
+      assert.equal(await readFile(path.join(outcome.result.directory, "screenshot.png"), "utf8"), "image");
+    }
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});

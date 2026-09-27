@@ -62,16 +62,19 @@ async function ensureGitignore(cwd: string, lines: string[]): Promise<string[]> 
 
 const SLASH_COMMAND = (vaultDir: string) => `---
 description: Export a Figma design and build it
-argument-hint: <link to a Figma frame>
+argument-hint: <Figma frame link> [more frame links...]
 allowed-tools: Bash(npx figma-vault:*), Read, Write, Edit, Glob, Grep
 ---
 
-Build the interface from this Figma design: $ARGUMENTS
+Build the interface from these Figma design links: $ARGUMENTS
 
 How to work:
 
-1. Export the design into the local vault with one command:
-   \`npx figma-vault add "$ARGUMENTS" --vault ${vaultDir}\`
+1. Extract each Figma URL from the arguments and pass it as its own quoted shell argument.
+   For two links, use:
+   \`npx figma-vault add "<first URL>" "<second URL>" --vault ${vaultDir}\`
+   With one link, omit the second URL. For a SECTION/CANVAS link, add \`--expand\`.
+   Never paste raw \`$ARGUMENTS\` into a shell command.
    If the command reports that FIGMA_TOKEN is missing — say so and stop.
 
 2. Read the design through the \`figma-vault\` MCP server, NOT through Figma:

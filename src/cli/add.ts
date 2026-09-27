@@ -25,7 +25,7 @@ export interface AddOptions {
   maxScreens?: number;
 }
 
-function failureMessage(outcome: PullSelectionOutcome, vaultDir: string, noAssets: boolean): string {
+function failureMessage(outcome: PullSelectionOutcome): string {
   const error = outcome.error;
   if (!error) return "";
   if (!(error instanceof FigmaApiError) || error.status !== 429) return error.message;
@@ -33,10 +33,7 @@ function failureMessage(outcome: PullSelectionOutcome, vaultDir: string, noAsset
     ? ` Figma asks to wait ${humanDuration(error.retryAfterSeconds)}.` : "";
   const details = [error.planTier && `plan ${error.planTier}`, error.rateLimitType && `limit type ${error.rateLimitType}`]
     .filter(Boolean).join(", ");
-  const message = `Figma answered 429: the rate limit is exhausted.${wait}${details ? ` (${details})` : ""}`;
-  return noAssets ? `${message} Try again later.` :
-    `${message}\n    If structure reads are still available, try --no-assets:\n` +
-    `    figma-vault add "${outcome.url}" --vault "${vaultDir}" --no-assets`;
+  return `Figma answered 429: the rate limit is exhausted.${wait}${details ? ` (${details})` : ""}`;
 }
 
 export async function runAdd(figmaUrls: string[], options: AddOptions): Promise<void> {
@@ -53,6 +50,7 @@ export async function runAdd(figmaUrls: string[], options: AddOptions): Promise<
   });
   let failed = 0;
   let exported = 0;
+  let rateLimited = false;
   for (const outcome of outcomes) {
     out(`\n${outcome.url}${outcome.expandedFrom ? ` → ${outcome.nodeId}` : ""}`);
     if (outcome.error instanceof ScreensSkippedError) {
@@ -61,7 +59,8 @@ export async function runAdd(figmaUrls: string[], options: AddOptions): Promise<
     }
     if (outcome.error) {
       failed += 1;
-      out(`  failed:     ${failureMessage(outcome, options.vaultDir, options.noAssets)}`);
+      if (outcome.error instanceof FigmaApiError && outcome.error.status === 429) rateLimited = true;
+      out(`  failed:     ${failureMessage(outcome)}`);
       continue;
     }
     exported += 1;
@@ -72,6 +71,11 @@ export async function runAdd(figmaUrls: string[], options: AddOptions): Promise<
   }
   out("");
   out(`${exported} exported, ${failed} failed.`);
+  if (rateLimited) {
+    out(options.noAssets
+      ? "Retry the same command after the rate limit resets."
+      : `If structure reads are available, retry the same command with --no-assets${options.expand ? " and keep --expand" : ""}.`);
+  }
   if (options.noAssets && exported > 0) {
     out("Images and screenshots are missing; run the same add without --no-assets later.");
   }

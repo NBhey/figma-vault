@@ -123,6 +123,41 @@ function unique(ids: string[]): string[] {
   return [...new Set(ids)];
 }
 
+/** После не-429 сбоя делим скриншоты, чтобы тяжёлый экран не лишал остальных рендера. */
+async function recoverScreenshots(
+  client: FigmaClient,
+  fileKey: string,
+  ids: string[],
+  splitFirst = true,
+): Promise<{ images: Record<string, string>; completedIds: string[]; rateLimited?: boolean }> {
+  if (ids.length === 0) return { images: {}, completedIds: [] };
+  if (splitFirst && ids.length > 1) {
+    const midpoint = Math.floor(ids.length / 2);
+    const first = await recoverScreenshots(client, fileKey, ids.slice(0, midpoint), false);
+    if (first.rateLimited) return first;
+    const second = await recoverScreenshots(client, fileKey, ids.slice(midpoint), false);
+    return {
+      images: { ...first.images, ...second.images },
+      completedIds: [...first.completedIds, ...second.completedIds],
+      rateLimited: second.rateLimited,
+    };
+  }
+  try {
+    return { images: await client.renderNodes(fileKey, ids, "png", 2), completedIds: ids };
+  } catch (error) {
+    const partial = settledImages({ status: "rejected", reason: error }, ids);
+    if (partial.failedStatus === 429) return { ...partial, rateLimited: true };
+    const remaining = ids.filter((id) => !partial.completedIds.includes(id));
+    if (remaining.length <= 1) return partial;
+    const recovered = await recoverScreenshots(client, fileKey, remaining);
+    return {
+      images: { ...partial.images, ...recovered.images },
+      completedIds: unique([...partial.completedIds, ...recovered.completedIds]),
+      rateLimited: recovered.rateLimited,
+    };
+  }
+}
+
 async function savePreparedSelections(
   client: FigmaClient,
   fileKey: string,
@@ -160,6 +195,12 @@ async function savePreparedSelections(
       ].filter((warning): warning is string => warning !== undefined);
       if (failures.length > 0) pngFailure = failures.join("; ");
       if (svgResult?.status === "rejected") svgFailure = renderFailure("SVG fallback", svgResult.reason);
+      if (screenshotResult?.status === "rejected" && screenshots.failedStatus !== 429) {
+        const missing = screenshotIds.filter((id) => !screenshots.completedIds.includes(id));
+        const recovered = await recoverScreenshots(client, fileKey, missing);
+        Object.assign(png.images, recovered.images);
+        png.completedIds = unique([...png.completedIds, ...recovered.completedIds]);
+      }
     } else {
       const [pngResult, svgResult] = await Promise.allSettled([
         client.renderNodes(fileKey, pngIds, "png", 2),
@@ -170,18 +211,12 @@ async function savePreparedSelections(
       if (pngResult?.status === "rejected") pngFailure = renderFailure("PNG renders", pngResult.reason);
       if (svgResult?.status === "rejected") svgFailure = renderFailure("SVG fallback", svgResult.reason);
 
-      if (pngFailure && png.failedStatus !== 429 && assetIds.length > 0) {
-        const missingScreenshots = screenshotIds.filter((id) => !png.images[id]);
+      if (pngFailure && png.failedStatus !== 429) {
+        const missingScreenshots = screenshotIds.filter((id) => !png.completedIds.includes(id));
         if (missingScreenshots.length > 0) {
-          const [retry] = await Promise.allSettled([
-            client.renderNodes(fileKey, missingScreenshots, "png", 2),
-          ]);
-          const recovered = settledImages(retry!, missingScreenshots);
+          const recovered = await recoverScreenshots(client, fileKey, missingScreenshots);
           Object.assign(png.images, recovered.images);
           png.completedIds = unique([...png.completedIds, ...recovered.completedIds]);
-          if (retry?.status === "rejected") {
-            pngFailure += `; ${renderFailure("Screenshot", retry.reason)}`;
-          }
         }
       }
     }
@@ -193,7 +228,7 @@ async function savePreparedSelections(
     if (CONTAINER_TYPES.has(rootType)) {
       warnings.push(
         `${selection.nodeId} is a ${rootType}, exported as one document; ` +
-          "expand it to export its frames as separate screens",
+          "pass --expand to export its frames as separate screens",
       );
     }
     const requiredPng = [selection.nodeId, ...selection.png];

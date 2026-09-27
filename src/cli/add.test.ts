@@ -67,7 +67,13 @@ test("limits groups links from one file into one structure and one render probe"
   globalThis.fetch = async (input) => {
     const url = new URL(String(input));
     calls.push(`${url.pathname}?${url.searchParams.get("ids")}`);
-    return Response.json({});
+    if (url.pathname.includes("/files/")) {
+      return Response.json({ nodes: {
+        "1:2": { document: { type: "FRAME" } },
+        "1:3": { document: { type: "FRAME" } },
+      } });
+    }
+    return Response.json({ images: {} });
   };
   try {
     await runLimits([link("1:2"), link("1:3"), link("1:2")]);
@@ -78,6 +84,66 @@ test("limits groups links from one file into one structure and one render probe"
     assert.match(output, /2 unique screen/);
     assert.match(output, /Asset renders may still need more requests/);
     assert.equal(process.exitCode, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.stdout.write = originalWrite;
+    if (originalToken === undefined) delete process.env.FIGMA_TOKEN;
+    else process.env.FIGMA_TOKEN = originalToken;
+    process.exitCode = originalExitCode;
+  }
+});
+
+test("limits does not render a SECTION or CANVAS as one large image", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalToken = process.env.FIGMA_TOKEN;
+  const originalWrite = process.stdout.write;
+  const originalExitCode = process.exitCode;
+  const calls: string[] = [];
+  let output = "";
+  process.env.FIGMA_TOKEN = "secret";
+  process.exitCode = 0;
+  process.stdout.write = ((chunk: string) => { output += chunk; return true; }) as typeof process.stdout.write;
+  globalThis.fetch = async (input) => {
+    const url = new URL(String(input));
+    calls.push(url.pathname);
+    return Response.json({ nodes: { "0:1": { document: { type: "CANVAS" } } } });
+  };
+  try {
+    await runLimits([link("0:1")]);
+    assert.deepEqual(calls, ["/v1/files/file-key/nodes"]);
+    assert.match(output, /Skipped image probe.*SECTION\/CANVAS/);
+    assert.match(output, /Probe requests used: 1/);
+    assert.equal(process.exitCode, 0);
+  } finally {
+    globalThis.fetch = originalFetch;
+    process.stdout.write = originalWrite;
+    if (originalToken === undefined) delete process.env.FIGMA_TOKEN;
+    else process.env.FIGMA_TOKEN = originalToken;
+    process.exitCode = originalExitCode;
+  }
+});
+
+test("429 guidance appears once and retains --expand for container links", async () => {
+  const originalFetch = globalThis.fetch;
+  const originalToken = process.env.FIGMA_TOKEN;
+  const originalWrite = process.stdout.write;
+  const originalExitCode = process.exitCode;
+  let output = "";
+  process.env.FIGMA_TOKEN = "secret";
+  process.exitCode = 0;
+  process.stdout.write = ((chunk: string) => { output += chunk; return true; }) as typeof process.stdout.write;
+  globalThis.fetch = async () => new Response("limited", {
+    status: 429, headers: { "retry-after": "999999" },
+  });
+  try {
+    await runAdd([link("0:1"), link("0:2")], {
+      vaultDir: ".figma-vault", noAssets: false, expand: true,
+    });
+    assert.match(output, /0 exported, 2 failed/);
+    assert.equal(output.match(/retry the same command with --no-assets/g)?.length, 1);
+    assert.match(output, /keep --expand/);
+    assert.doesNotMatch(output, /figma-vault add "https:\/\/figma\.com/);
+    assert.equal(process.exitCode, 1);
   } finally {
     globalThis.fetch = originalFetch;
     process.stdout.write = originalWrite;
