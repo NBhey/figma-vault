@@ -301,7 +301,7 @@ Figma делается глазами через `npm run dev` → `/compare/<и
 
 ```bash
 npm install
-npm test          # 63 теста
+npm test          # 85 тестов
 npm run typecheck
 npm run dev       # локальный просмотр восстановленной вёрстки и сравнение с макетом
 ```

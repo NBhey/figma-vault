@@ -8,12 +8,12 @@
     "source": "github"
   },
   "websiteUrl": "https://github.com/NBhey/figma-vault#readme",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "figma-vault",
-      "version": "0.1.4",
+      "version": "0.1.5",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
