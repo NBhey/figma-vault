@@ -123,39 +123,62 @@ function unique(ids: string[]): string[] {
   return [...new Set(ids)];
 }
 
-/** После не-429 сбоя делим скриншоты, чтобы тяжёлый экран не лишал остальных рендера. */
+const MAX_SCREENSHOT_RETRY_REQUESTS = 8;
+
+interface ScreenshotRecovery {
+  images: Record<string, string>;
+  completedIds: string[];
+  requests: number;
+  budgetExhausted: boolean;
+}
+
+/** После не-429 сбоя проверяем меньшие пачки в пределах бюджета на файл. */
 async function recoverScreenshots(
   client: FigmaClient,
   fileKey: string,
   ids: string[],
-  splitFirst = true,
-): Promise<{ images: Record<string, string>; completedIds: string[]; rateLimited?: boolean }> {
-  if (ids.length === 0) return { images: {}, completedIds: [] };
-  if (splitFirst && ids.length > 1) {
-    const midpoint = Math.floor(ids.length / 2);
-    const first = await recoverScreenshots(client, fileKey, ids.slice(0, midpoint), false);
-    if (first.rateLimited) return first;
-    const second = await recoverScreenshots(client, fileKey, ids.slice(midpoint), false);
-    return {
-      images: { ...first.images, ...second.images },
-      completedIds: [...first.completedIds, ...second.completedIds],
-      rateLimited: second.rateLimited,
-    };
+): Promise<ScreenshotRecovery> {
+  const queue: string[][] = [];
+  const enqueue = (batch: string[]) => {
+    if (batch.length === 0) return;
+    if (batch.length === 1) {
+      queue.push(batch);
+      return;
+    }
+    const midpoint = Math.floor(batch.length / 2);
+    queue.push(batch.slice(0, midpoint), batch.slice(midpoint));
+  };
+  enqueue(ids);
+  const images: Record<string, string> = {};
+  const completedIds = new Set<string>();
+  let requests = 0;
+  let rateLimited = false;
+  while (queue.length > 0 && requests < MAX_SCREENSHOT_RETRY_REQUESTS && !rateLimited) {
+    const batch = queue.shift()!;
+    // renderNodes splits at 40 ids internally; count every /images call in this budget.
+    if (batch.length > 40) {
+      enqueue(batch);
+      continue;
+    }
+    requests += 1;
+    try {
+      Object.assign(images, await client.renderNodes(fileKey, batch, "png", 2));
+      for (const id of batch) completedIds.add(id);
+    } catch (error) {
+      const partial = settledImages({ status: "rejected", reason: error }, batch);
+      Object.assign(images, partial.images);
+      for (const id of partial.completedIds) completedIds.add(id);
+      rateLimited = partial.failedStatus === 429;
+      const remaining = batch.filter((id) => !completedIds.has(id));
+      if (!rateLimited && remaining.length > 1) enqueue(remaining);
+    }
   }
-  try {
-    return { images: await client.renderNodes(fileKey, ids, "png", 2), completedIds: ids };
-  } catch (error) {
-    const partial = settledImages({ status: "rejected", reason: error }, ids);
-    if (partial.failedStatus === 429) return { ...partial, rateLimited: true };
-    const remaining = ids.filter((id) => !partial.completedIds.includes(id));
-    if (remaining.length <= 1) return partial;
-    const recovered = await recoverScreenshots(client, fileKey, remaining);
-    return {
-      images: { ...partial.images, ...recovered.images },
-      completedIds: unique([...partial.completedIds, ...recovered.completedIds]),
-      rateLimited: recovered.rateLimited,
-    };
-  }
+  return {
+    images,
+    completedIds: [...completedIds],
+    requests,
+    budgetExhausted: queue.length > 0 && !rateLimited && requests >= MAX_SCREENSHOT_RETRY_REQUESTS,
+  };
 }
 
 async function savePreparedSelections(
@@ -174,6 +197,7 @@ async function savePreparedSelections(
   let svg: ReturnType<typeof settledImages> = { images: {}, completedIds: [] };
   let pngFailure: string | undefined;
   let svgFailure: string | undefined;
+  let recovery: ScreenshotRecovery | undefined;
 
   if (!options.noAssets) {
     if (separateScreenshots) {
@@ -197,9 +221,11 @@ async function savePreparedSelections(
       if (svgResult?.status === "rejected") svgFailure = renderFailure("SVG fallback", svgResult.reason);
       if (screenshotResult?.status === "rejected" && screenshots.failedStatus !== 429) {
         const missing = screenshotIds.filter((id) => !screenshots.completedIds.includes(id));
-        const recovered = await recoverScreenshots(client, fileKey, missing);
-        Object.assign(png.images, recovered.images);
-        png.completedIds = unique([...png.completedIds, ...recovered.completedIds]);
+        if (missing.length > 0) {
+          recovery = await recoverScreenshots(client, fileKey, missing);
+          Object.assign(png.images, recovery.images);
+          png.completedIds = unique([...png.completedIds, ...recovery.completedIds]);
+        }
       }
     } else {
       const [pngResult, svgResult] = await Promise.allSettled([
@@ -214,14 +240,15 @@ async function savePreparedSelections(
       if (pngFailure && png.failedStatus !== 429) {
         const missingScreenshots = screenshotIds.filter((id) => !png.completedIds.includes(id));
         if (missingScreenshots.length > 0) {
-          const recovered = await recoverScreenshots(client, fileKey, missingScreenshots);
-          Object.assign(png.images, recovered.images);
-          png.completedIds = unique([...png.completedIds, ...recovered.completedIds]);
+          recovery = await recoverScreenshots(client, fileKey, missingScreenshots);
+          Object.assign(png.images, recovery.images);
+          png.completedIds = unique([...png.completedIds, ...recovery.completedIds]);
         }
       }
     }
   }
 
+  let recoveryReported = false;
   for (const selection of prepared) {
     const warnings: string[] = [];
     const rootType = getRootEntry(selection.raw, selection.nodeId).document.type;
@@ -264,6 +291,14 @@ async function savePreparedSelections(
           getRootEntry(selection.raw, selection.nodeId).document,
         ),
       });
+      if (!recoveryReported && recovery) {
+        warnings.unshift(`Screenshots retried in smaller batches: ${recovery.requests} additional /images requests for file ${fileKey}`);
+        if (recovery.budgetExhausted) {
+          const missing = screenshotIds.filter((id) => !png.images[id]);
+          warnings.push(`Screenshot retry budget exhausted; screens without screenshots: ${missing.join(", ")}`);
+        }
+        recoveryReported = true;
+      }
       outcomes.set(selectionKey(selection), {
         url: selection.url,
         fileKey,

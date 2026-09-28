@@ -200,8 +200,10 @@ test("failed screenshot batch splits to isolate one heavy screen without raster 
       { token: "secret", vaultDir, client },
     );
     assert.deepEqual(imageCalls, [
-      "1:2,1:3,1:4,1:5", "1:2,1:3", "1:2", "1:3", "1:4,1:5",
+      "1:2,1:3,1:4,1:5", "1:2,1:3", "1:4,1:5", "1:2", "1:3",
     ]);
+    assert.ok(outcomes[0]?.result?.warnings.some((warning) =>
+      warning.includes("4 additional /images requests")));
     for (const outcome of outcomes) {
       assert.ok(outcome.result);
       const screenshot = path.join(outcome.result.directory, "screenshot.png");
@@ -212,6 +214,38 @@ test("failed screenshot batch splits to isolate one heavy screen without raster 
         assert.equal(await readFile(screenshot, "utf8"), "image");
       }
     }
+  } finally {
+    await rm(vaultDir, { recursive: true, force: true });
+  }
+});
+
+test("persistent screenshot failures stop at the per-file retry budget and report missing screens", async () => {
+  const vaultDir = await mkdtemp(path.join(os.tmpdir(), "figma-vault-batch-"));
+  const ids = Array.from({ length: 20 }, (_, index) => `1:${index + 1}`);
+  const imageCalls: string[] = [];
+  const fetcher: typeof fetch = async (input) => {
+    const url = new URL(String(input));
+    const requested = url.searchParams.get("ids")!.split(",");
+    if (url.pathname.includes("/files/")) {
+      return Response.json({ name: "File", nodes: Object.fromEntries(requested.map((id) => [id, {
+        document: {
+          id, name: `Screen ${id}`, type: "FRAME",
+          absoluteBoundingBox: { x: 0, y: 0, width: 100, height: 100 }, children: [],
+        },
+      }])) });
+    }
+    imageCalls.push(requested.join(","));
+    return new Response("render failed", { status: 500 });
+  };
+  const client = new FigmaClient("secret", fetcher, "https://figma.test/v1");
+  try {
+    const outcomes = await pullFigmaSelections(ids.map(link), { token: "secret", vaultDir, client });
+    assert.equal(imageCalls.length, 9); // initial render plus at most eight recovery requests
+    assert.ok(outcomes.every((outcome) => outcome.result));
+    assert.ok(outcomes[0]?.result?.warnings.some((warning) =>
+      warning.includes("8 additional /images requests")));
+    assert.ok(outcomes[0]?.result?.warnings.some((warning) =>
+      warning.includes("screens without screenshots: 1:1, 1:2") && warning.includes("1:20")));
   } finally {
     await rm(vaultDir, { recursive: true, force: true });
   }
